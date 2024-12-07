@@ -5,3 +5,9 @@ nltk
 transformers
 torch
 validators
+tiktoken
+protobuf
+blobfile 
+sentencepiece
+bs4
+gunicorn
