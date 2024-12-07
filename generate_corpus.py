@@ -21,4 +21,4 @@ def generate_corpus(qa_pairs):
 # with open('corpus.json', 'w') as f:
 #     json.dump(corpus, f, indent=4)
 
-# print("Corpus file generated successfully.")
+# print(corpus)

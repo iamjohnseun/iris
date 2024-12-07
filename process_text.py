@@ -1,12 +1,11 @@
 import nltk
 from nltk.tokenize import sent_tokenize
-nltk.download('punkt')
+nltk.download('punkt', quiet=True)
 
 def extract_sentences(text):
     return sent_tokenize(text)
 
 # USAGE
-
 # text = "Your extracted text here..."
 # sentences = extract_sentences(text)
 # print(sentences)
