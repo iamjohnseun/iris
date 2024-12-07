@@ -3,8 +3,8 @@ import torch
 
 def load_models():
     try:
-        question_generator = pipeline('e2e-qg', model='valhalla/t5-small-e2e-qg')
-        intent_classifier = pipeline('text-classification', model='JoanaLiu/bert_base_faq')
+        question_generator = pipeline('text2text-generation', model='t5-small')
+        intent_classifier = pipeline('text-classification', model='distilbert-base-uncased')
         return question_generator, intent_classifier
     except Exception as e:
         raise RuntimeError(f"Failed to load models: {str(e)}")
