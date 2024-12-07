@@ -17,7 +17,7 @@ def fetch_website_content(url, visited=None, max_depth=3, delay=1):
     if visited is None:
         visited = set()
     texts = []
-    queue = [(url, 0)]  # (url, depth)
+    queue = [(url, 0)]
     hostname = urlparse(url).netloc
     session = create_session()
 
@@ -27,10 +27,8 @@ def fetch_website_content(url, visited=None, max_depth=3, delay=1):
             continue
         visited.add(current_url)
         
-        time.sleep(delay)  # Rate limiting
-        
         try:
-            response = session.get(current_url, timeout=(5, 15))  # Connect timeout, Read timeout
+            response = session.get(current_url, timeout=(5, 15))
             if response.status_code == 200:
                 html_content = response.text
                 texts.append(parse_website_content(html_content))
@@ -41,15 +39,13 @@ def fetch_website_content(url, visited=None, max_depth=3, delay=1):
                         abs_link = urljoin(current_url, link['href'])
                         if urlparse(abs_link).netloc == hostname and abs_link not in visited:
                             queue.append((abs_link, depth + 1))
-            else:
-                print(f"Failed to fetch {current_url}: {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            print(f"Request failed for {current_url}: {e}")
-    return ' '.join(texts)
+        except requests.exceptions.RequestException:
+            continue
+            
+    return ' '.join(texts) if texts else ""
 
 def parse_website_content(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-    # Remove scripts and styles
     for script in soup(["script", "style"]):
         script.extract()
     return ' '.join([p.get_text(strip=True) for p in soup.find_all('p')])
