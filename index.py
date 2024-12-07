@@ -14,26 +14,29 @@ def is_valid_url(url):
 def cached_main(url):
     return main(url)
 
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        "status": "Online",
+        "message": "Iris API is running",
+        "version": "1.0"
+    })
+
 @app.route('/', methods=['POST'])
 def generate_corpus_route():
     data = request.get_json()
     url = data.get('url')
-
     if not url or not is_valid_url(url):
-        return jsonify({'error': 'Please provide a valid URL'}), 400
+        return jsonify({"error": "Invalid URL"}), 400
+    result = cached_main(url)
+    return jsonify(result)
 
-    try:
-        if app.config['CACHE_ENABLED']:
-            corpus = cached_main(url)
-        else:
-            corpus = main(url)
-        return jsonify(corpus), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.errorhandler(413)
-def request_entity_too_large(error):
-    return jsonify({'error': 'File too large'}), 413
+@app.route('/git', methods=['POST'])
+def git_webhook():
+    import subprocess
+    subprocess.run(['git', 'pull'], cwd='/var/www/iris')
+    subprocess.run(['systemctl', 'restart', 'iris'])
+    return jsonify({"status": "updated"})
 
 if __name__ == '__main__':
-    app.run(debug=app.config['DEBUG'])
+    app.run(host='0.0.0.0', port=5000)
