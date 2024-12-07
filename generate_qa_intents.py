@@ -43,3 +43,8 @@ def generate_questions_and_intents(sentences, batch_size=8):
                 continue
                 
     return qa_pairs
+
+# USAGE
+# sentences = ["Your extracted sentences here..."]
+# qa_pairs = generate_questions_and_intents(sentences)
+# print(qa_pairs)
