@@ -5,16 +5,20 @@ import gc
 
 def load_models():
     try:
-        question_generator = pipeline('text2text-generation', model='t5-small', device='cpu')
-        intent_classifier = pipeline('text-classification', model='distilbert-base-uncased', device='cpu')
+        # Force models to use CPU and smaller batch size
+        question_generator = pipeline('text2text-generation', model='t5-small', device='cpu', batch_size=1)
+        intent_classifier = pipeline('text-classification', model='distilbert-base-uncased', device='cpu', batch_size=1)
         return question_generator, intent_classifier
     except Exception as e:
         raise RuntimeError(f"Failed to load models: {str(e)}")
 
 question_generator, intent_classifier = load_models()
 
-def generate_questions_and_intents(sentences, batch_size=3):
+def generate_questions_and_intents(sentences, batch_size=Config.MAX_BATCH_SIZE):
+    sentences = sentences[:Config.MAX_SENTENCES]
     qa_pairs = []
+    
+    torch.set_num_threads(Config.TORCH_THREADS)
     
     # Process in batches
     for i in range(0, len(sentences), batch_size):
@@ -22,7 +26,7 @@ def generate_questions_and_intents(sentences, batch_size=3):
         
         try:
             with torch.no_grad():
-                questions = question_generator(batch, max_length=Config.MAX_QUESTION_LENGTH)
+                questions = question_generator(batch, max_length=Config.MAX_QUESTION_LENGTH, num_return_sequences=1)
                 intents = intent_classifier(batch)
                 
                 for q_gen, intent, sentence in zip(questions, intents, batch):
