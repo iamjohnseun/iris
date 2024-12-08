@@ -3,6 +3,7 @@ import os
 class Config:
     DEBUG = os.getenv('DEBUG', False)
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
+    MAX_QUESTION_LENGTH = 50
     SCRAPING_MAX_DEPTH = int(os.getenv('SCRAPING_MAX_DEPTH', 10))
     SCRAPING_DELAY = float(os.getenv('SCRAPING_DELAY', 1.0))
     SCRAPING_DELAY_MAX = float(os.getenv('SCRAPING_DELAY_MAX', 3.0))  # Maximum delay for random backoff
