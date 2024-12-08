@@ -26,7 +26,7 @@ def main(url, single_page=False):
         if sentences:
             qa_pairs = generate_questions_and_intents(sentences)
             if qa_pairs:
-                corpus = generate_corpus(qa_pairs)
+                corpus = generate_corpus(qa_pairs, url)
                 result["data"] = corpus
                 result["status"] = "complete"
             else:

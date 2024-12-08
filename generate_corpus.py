@@ -2,10 +2,10 @@ import json
 
 from generate_utterances import generate_utterances
 
-def generate_corpus(qa_pairs):
+def generate_corpus(qa_pairs, url):
     corpus = []
     for pair in qa_pairs:
-        utterances = generate_utterances(pair['question'])
+        utterances = generate_utterances(pair['question'], url)
         corpus.append({
             "intent": pair['intent'],
             "utterances": utterances,
@@ -16,7 +16,7 @@ def generate_corpus(qa_pairs):
 # USAGE
 
 # qa_pairs = [{"question": "Can I get a refund?", "answer": "Yes, you can get a refund.", "intent": "faq.refund"}]
-# corpus = generate_corpus(qa_pairs)
+# corpus = generate_corpus(qa_pairs, url)
 
 # with open('corpus.json', 'w') as f:
 #     json.dump(corpus, f, indent=4)
