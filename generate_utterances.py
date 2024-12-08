@@ -1,32 +1,35 @@
-from config import Config
 from transformers import pipeline
 import torch
 import gc
 
-def generate_utterances(question):
-    try:
-        # Clear CUDA cache if available
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            
-        # Force CPU usage and smaller batch size
-        paraphrase = pipeline(
+# Global model instance
+_paraphrase_model = None
+
+def get_paraphrase_model():
+    global _paraphrase_model
+    if _paraphrase_model is None:
+        _paraphrase_model = pipeline(
             'text2text-generation',
             model='tuner007/pegasus_paraphrase',
             device='cpu',
             batch_size=1
         )
-        
-        paraphrases = paraphrase(
+    return _paraphrase_model
+
+def generate_utterances(question):
+    try:
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            
+        model = get_paraphrase_model()
+        paraphrases = model(
             question,
             num_return_sequences=3,
-            max_length=Config.MAX_QUESTION_LENGTH,
+            max_length=50,
             clean_up_tokenization_spaces=True
         )
         
-        # Force garbage collection
         gc.collect()
-        
         return [p['generated_text'] for p in paraphrases]
         
     except Exception as e:
