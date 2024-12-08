@@ -73,25 +73,26 @@ def generate_utterances(question, num_variations=3):
     question = clean_text(question)
     
     # Generate question variations
-    prompt = f"Generate different ways to ask: {question}"
+    prompt = f"In the same language, Generate different, concise and direct ways to ask: {question}"
     variations = model(
         prompt,
         max_length=Config.MAX_QUESTION_LENGTH,
         num_return_sequences=num_variations,
-        temperature=0.7
+        temperature=0.7,
+        do_sample=True
     )
     
     utterances = []
     for var in variations:
         text = clean_text(var['generated_text'])
-        if text.endswith('?') and len(text.split()) >= 3:
+        if text.endswith('?') and len(text.split()) >= 3 and text.isascii():
             utterances.append(text)
     
     return utterances
 
 def summarize_answer(text):
     # Enhanced answer summarization
-    summary_prompt = "Create a clear, direct answer from this text: " + text
+    summary_prompt = "In the same language, create a clear, direct answer from this text: " + text
     summary = topic_generator(
         summary_prompt, 
         max_length=50, 
@@ -99,12 +100,7 @@ def summarize_answer(text):
         temperature=0.3
     )[0]['generated_text']
     
-    # Clean and format the summary
-    summary = clean_text(summary)
-    if not summary.endswith(('.', '?', '!')):
-        summary += '.'
-    
-    return summary
+    return clean_text(summary)
 
 def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_SIZE):
     sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
