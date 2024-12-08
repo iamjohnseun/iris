@@ -10,6 +10,7 @@ class Config:
     FALLBACK_MODE = True  # Enable fallback processing
     MIN_SENTENCES = 10  # Minimum sentences to process
     MAX_SENTENCES = 100 # Maximum number of sentences to generate
+    MAX_PAGES = 50 # Maximum number of pages to crawl
     SCRAPING_MAX_DEPTH = int(os.getenv('SCRAPING_MAX_DEPTH', 10))
     SCRAPING_DELAY = float(os.getenv('SCRAPING_DELAY', 1.0))
     SCRAPING_DELAY_MAX = float(os.getenv('SCRAPING_DELAY_MAX', 3.0))  # Maximum delay for random backoff
