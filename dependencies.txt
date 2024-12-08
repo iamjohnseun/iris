@@ -1,4 +1,0 @@
-pip install flask requests beautifulsoup4 nltk
- spacy gensim transformers
-# import nltk
-# nltk.download('punkt')
