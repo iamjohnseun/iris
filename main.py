@@ -3,7 +3,7 @@ from generate_qa_intents import generate_questions_and_intents
 from process_text import extract_sentences
 from web_scraper import fetch_website_content
 
-def main(url):
+def main(url, single_page=False):
     result = {
         "status": "partial",
         "data": None,
@@ -13,7 +13,7 @@ def main(url):
     }
     
     try:
-        scraped_content = fetch_website_content(url)
+        scraped_content = fetch_website_content(url, single_page=single_page)
         result["stats"] = scraped_content["stats"]
         
         if not scraped_content["content"]:
