@@ -1,4 +1,5 @@
 from transformers import pipeline
+from config import Config
 import torch
 import gc
 
@@ -12,7 +13,7 @@ def load_models():
 
 question_generator, intent_classifier = load_models()
 
-def generate_questions_and_intents(sentences, batch_size=8):
+def generate_questions_and_intents(sentences, batch_size=3):
     qa_pairs = []
     
     # Process in batches
@@ -21,7 +22,7 @@ def generate_questions_and_intents(sentences, batch_size=8):
         
         try:
             with torch.no_grad():
-                questions = question_generator(batch, max_length=64)
+                questions = question_generator(batch, max_length=Config.MAX_QUESTION_LENGTH)
                 intents = intent_classifier(batch)
                 
                 for q_gen, intent, sentence in zip(questions, intents, batch):
