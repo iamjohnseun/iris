@@ -3,7 +3,10 @@ import os
 class Config:
     DEBUG = os.getenv('DEBUG', False)
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
-    MAX_QUESTION_LENGTH = 50
+    MAX_QUESTION_LENGTH = 50 # Maximum length of a question
+    MAX_BATCH_SIZE = 1 # Maximum number of questions to process in a single batch
+    TORCH_THREADS = 3 # Number of threads for PyTorch
+    MAX_SENTENCES = 100 # Maximum number of sentences to generate
     SCRAPING_MAX_DEPTH = int(os.getenv('SCRAPING_MAX_DEPTH', 10))
     SCRAPING_DELAY = float(os.getenv('SCRAPING_DELAY', 1.0))
     SCRAPING_DELAY_MAX = float(os.getenv('SCRAPING_DELAY_MAX', 3.0))  # Maximum delay for random backoff
