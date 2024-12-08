@@ -1,13 +1,14 @@
+import gc
 import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse, urlunparse
 import time
 import random
+import psutil
+from urllib.parse import urljoin, urlparse, urlunparse
+from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from urllib.robotparser import RobotFileParser
 from config import Config
-import psutil
 
 def check_memory_usage():
     memory = psutil.virtual_memory()
@@ -128,6 +129,7 @@ def fetch_website_content(url, visited=None, max_pages=Config.MAX_PAGES):
         session.close()
         crawl_stats["end_time"] = time.time()
         crawl_stats["duration"] = crawl_stats["end_time"] - crawl_stats["start_time"]
+        gc.collect()
         
     return {
         "content": ' '.join(texts) if texts else "",

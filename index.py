@@ -1,9 +1,7 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, stream_with_context
 from validators import url as validate_url
 from main import main
-from functools import lru_cache
 from config import Config
-import requests
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -12,10 +10,6 @@ def is_valid_url(url):
     if not url:
         return False
     return validate_url(url)
-
-@lru_cache(maxsize=100)
-def cached_main(url):
-    return main(url)
 
 @app.route('/', methods=['GET'])
 def home():
@@ -31,22 +25,19 @@ def generate_corpus_route():
         data = request.get_json()
         if not data:
             return jsonify({"status": "error", "message": "Request body is required"}), 400
-            
+
         url = data.get('url')
         if not is_valid_url(url):
-            return jsonify({
-                "status": "error",
-                "message": "Invalid or missing URL in request"
-            }), 400
-            
-        result = cached_main(url)
-        return jsonify(result)
-        
+            return jsonify({"status": "error", "message": "Invalid or missing URL in request"}), 400
+
+        # Get the generator from main()
+        result_generator = main(url)
+
+        return Response(stream_with_context(result_generator), mimetype='application/json')
+
     except Exception as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @app.route('/git', methods=['POST'])
 def git_webhook():

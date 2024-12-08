@@ -18,7 +18,7 @@ def generate_questions_and_intents(sentences, batch_size=Config.MAX_BATCH_SIZE):
     sentences = sentences[:Config.MAX_SENTENCES]
     qa_pairs = []
     
-    # torch.set_num_threads(Config.TORCH_THREADS)
+    torch.set_num_threads(Config.TORCH_THREADS)
     gc.collect()
     torch.cuda.empty_cache() if torch.cuda.is_available() else None
     
@@ -31,8 +31,7 @@ def generate_questions_and_intents(sentences, batch_size=Config.MAX_BATCH_SIZE):
                 questions = question_generator(batch, max_length=Config.MAX_QUESTION_LENGTH, num_return_sequences=1)
                 intents = intent_classifier(batch)
                 
-                if i % (batch_size * 5) == 0:
-                    gc.collect()
+                gc.collect()
                 
                 for q_gen, intent, sentence in zip(questions, intents, batch):
                     qa_pairs.append({
