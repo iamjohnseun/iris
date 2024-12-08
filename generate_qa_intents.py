@@ -15,33 +15,25 @@ question_generator, intent_classifier = load_models()
 def generate_questions_and_intents(sentences, batch_size=8):
     qa_pairs = []
     
-    # Process in smaller batches
+    # Process in batches
     for i in range(0, len(sentences), batch_size):
         batch = sentences[i:i + batch_size]
         
-        # Clear memory between batches
-        torch.cuda.empty_cache()
-        gc.collect()
-        
-        for sentence in batch:
-            try:
-                with torch.no_grad():
-                    questions = question_generator(sentence, max_length=64)
-                    intent = intent_classifier(sentence)[0]['label']
-                    
-                    if not isinstance(questions, list):
-                        questions = [questions]
-                        
-                    for q in questions:
-                        qa_pairs.append({
-                            "question": q['generated_text'],
-                            "answer": sentence,
-                            "intent": f"faq.{intent.lower().replace(' ', '_')}"
-                        })
-                        
-            except Exception as e:
-                continue
+        try:
+            with torch.no_grad():
+                questions = question_generator(batch, max_length=64)
+                intents = intent_classifier(batch)
                 
+                for q_gen, intent, sentence in zip(questions, intents, batch):
+                    qa_pairs.append({
+                        "question": q_gen['generated_text'],
+                        "answer": sentence,
+                        "intent": f"faq.{intent['label'].lower().replace(' ', '_')}"
+                    })
+                    
+        except Exception as e:
+            continue
+                    
     return qa_pairs
 
 # USAGE
