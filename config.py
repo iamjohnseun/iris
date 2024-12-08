@@ -7,6 +7,7 @@ class Config:
     MAX_BATCH_SIZE = 2 # Maximum number of questions to process in a single batch
     TORCH_THREADS = 2 # Number of threads for PyTorch
     MEMORY_THRESHOLD = 0.8  # 80% memory usage threshold
+    MAX_MEMORY_USAGE = 0.85  # 85% memory threshold for scraping
     FALLBACK_MODE = True  # Enable fallback processing
     MIN_SENTENCES = 10  # Minimum sentences to process
     MAX_SENTENCES = 100 # Maximum number of sentences to generate
@@ -17,13 +18,19 @@ class Config:
     REQUEST_TIMEOUT = (5, 15)  # (Connect timeout, Read timeout)
     CACHE_ENABLED = os.getenv('CACHE_ENABLED', True)
     CACHE_TIMEOUT = int(os.getenv('CACHE_TIMEOUT', 3600))  # 1 hour
+    MIN_WORDS_PER_ELEMENT = 5  # Minimum words for a content element to be valid
     
     # Content extraction configuration
-    CONTENT_TAGS = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'article', 'section']
+    CONTENT_TAGS = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'td', 'article', 'section']
+    
+    # Elements to exclude
+    EXCLUDED_ELEMENTS = ['script', 'style', 'meta', 'noscript', 'header', 'footer', 
+        'nav', 'aside', 'iframe', 'svg', 'path', 'form']
+    EXCLUDED_CLASSES = ['nav', 'footer', 'header', 'sidebar', 'menu', 'cookie', 'popup', 'modal']
+    EXCLUDED_IDS = ['nav', 'footer', 'header', 'sidebar', 'menu', 'cookie-banner', 'popup']
+    EXCLUDED_PATTERNS = ['login', 'signup', 'cart', 'checkout', 'account']
+    EXCLUDED_EXTENSIONS = ('.pdf', '.jpg', '.jpeg', '.png', '.gif', '.doc', '.docx', 
+                         '.xls', '.xlsx', '.zip', '.rar', '.exe', '.mp3', '.mp4')
     
     # User agent for the bot
-    USER_AGENT = 'Mozilla/5.0 (compatible; IrisBot/1.0)'
-    
-    # File extensions to skip
-    SKIP_EXTENSIONS = ('.pdf', '.jpg', '.jpeg', '.png', '.gif', '.doc', '.docx', 
-                      '.xls', '.xlsx', '.zip', '.rar', '.exe', '.mp3', '.mp4')
+    USER_AGENT = 'Mozilla/5.0 (compatible; IrisBot/1.0; +https://iris.chromesq.com)'
