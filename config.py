@@ -2,7 +2,7 @@ import os
 
 class Config:
     DEBUG = os.getenv('DEBUG', False)
-    MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 16 MB
+    MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8 MB
     MAX_QUESTION_LENGTH = 50 # Maximum length of a question
     MAX_BATCH_SIZE = 4 # Maximum number of questions to process in a single batch
     TORCH_THREADS = 2 # Number of threads for PyTorch
