@@ -48,7 +48,7 @@ def create_session():
     session.headers.update({'User-Agent': Config.USER_AGENT})
     return session
 
-def fetch_website_content(url, visited=None, max_pages=50):
+def fetch_website_content(url, visited=None, max_pages=Config.MAX_PAGES):
     if visited is None:
         visited = set()
     
@@ -57,35 +57,59 @@ def fetch_website_content(url, visited=None, max_pages=50):
         "urls_visited": [],
         "skipped_urls": [],
         "errors": [],
-        "memory_usage": [],
-        "content_lengths": []
+        "start_time": time.time(),
+        "end_time": None,
+        "total_content_size": 0
     }
     
+    if not is_allowed_to_crawl(url):
+        crawl_stats["errors"].append(f"Crawling not allowed for {url}")
+        return {"content": "", "stats": crawl_stats}
+    
+    texts = []
+    queue = [(url, 0)]
+    hostname = urlparse(url).netloc
+    session = create_session()
+
     try:
-        session = create_session()
-        texts = []
-        queue = [(url, 0)]
-        hostname = urlparse(url).netloc
-        
         while queue and crawl_stats["pages_crawled"] < max_pages:
             current_url, depth = queue.pop(0)
             normalized_url = normalize_url(current_url)
             
             if normalized_url in visited or depth > Config.SCRAPING_MAX_DEPTH:
+                crawl_stats["skipped_urls"].append({
+                    "url": current_url,
+                    "reason": "Already visited or max depth reached"
+                })
                 continue
                 
             visited.add(normalized_url)
-            crawl_stats["urls_visited"].append(current_url)
+            crawl_stats["urls_visited"].append({
+                "url": current_url,
+                "depth": depth,
+                "timestamp": time.time()
+            })
             
-            response = session.get(current_url, timeout=Config.REQUEST_TIMEOUT)
-            if response.status_code == 200:
+            try:
+                response = session.get(current_url, timeout=Config.REQUEST_TIMEOUT)
+                response.raise_for_status()
+                
+                if not 'text/html' in response.headers.get('Content-Type', '').lower():
+                    crawl_stats["skipped_urls"].append({
+                        "url": current_url,
+                        "reason": "Not HTML content"
+                    })
+                    continue
+
                 html_content = response.text
+                crawl_stats["total_content_size"] += len(html_content)
+                
                 page_text = parse_website_content(html_content)
                 
                 if page_text.strip():
                     texts.append(page_text)
                     crawl_stats["pages_crawled"] += 1
-                    
+
                 if depth < Config.SCRAPING_MAX_DEPTH:
                     soup = BeautifulSoup(html_content, 'lxml')
                     for link in soup.find_all('a', href=True):
@@ -93,15 +117,23 @@ def fetch_website_content(url, visited=None, max_pages=50):
                         if should_crawl_url(abs_link, hostname, visited):
                             queue.append((abs_link, depth + 1))
                             
-    except Exception as e:
-        crawl_stats["errors"].append(str(e))
+            except requests.exceptions.RequestException as e:
+                crawl_stats["errors"].append({
+                    "url": current_url,
+                    "error": str(e),
+                    "timestamp": time.time()
+                })
+                
     finally:
         session.close()
+        crawl_stats["end_time"] = time.time()
+        crawl_stats["duration"] = crawl_stats["end_time"] - crawl_stats["start_time"]
         
     return {
         "content": ' '.join(texts) if texts else "",
         "stats": crawl_stats
     }
+
 def parse_website_content(html_content):
     soup = BeautifulSoup(html_content, 'lxml')
     
