@@ -4,6 +4,8 @@ class Config:
     DEBUG = os.getenv('DEBUG', False)
     MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8 MB
     MAX_QUESTION_LENGTH = 50 # Maximum length of a question
+    MAX_INTENT_LENGTH = 40 # Maximum length for intent name
+    MAX_UTTERANCE_LENGTH = 60 # Maximum length for utterances
     MAX_BATCH_SIZE = 2 # Maximum number of questions to process in a single batch
     TORCH_THREADS = 2 # Number of threads for PyTorch
     MEMORY_THRESHOLD = 0.8  # 80% memory usage threshold
