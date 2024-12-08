@@ -36,23 +36,31 @@ def clean_text(text):
 def generate_intent_name(text, url):
     # Extract page name from URL
     path = urlparse(url).path.strip('/')
-    page_context = path.split('/')[-1] if path else 'content'
+    page_context = path.split('/')[-1] if path else 'home'
     
-    # Generate topic for the text
-    topic_prompt = f"Generate a single word topic for: {text}"
-    topic = topic_generator(topic_prompt, max_length=10, num_return_sequences=1)[0]['generated_text']
+    # Generate topic using more specific prompts
+    topic_prompt = "Extract key topic word from this text: " + text
+    topic = topic_generator(
+        topic_prompt, 
+        max_length=10, 
+        num_return_sequences=1,
+        temperature=0.3
+    )[0]['generated_text']
     
     # Generate descriptive subject
-    subject_prompt = f"Generate a single word description for: {text}"
-    subject = topic_generator(subject_prompt, max_length=20, num_return_sequences=1)[0]['generated_text']
+    subject_prompt = "Extract main action or purpose from this text: " + text
+    subject = topic_generator(
+        subject_prompt, 
+        max_length=15, 
+        num_return_sequences=1,
+        temperature=0.3
+    )[0]['generated_text']
     
     # Clean and format the intent name
-    topic = topic.lower().strip().replace(' ', '_')
-    subject = subject.lower().strip().replace(' ', '_')
+    topic = clean_text(topic).lower().split()[0]
+    subject = clean_text(subject).lower().replace(' ', '_')[:20]
     
-    intent_name = f"{page_context}.{topic}.{subject}"
-        
-    return intent_name
+    return f"{page_context}.{topic}.{subject}"
 
 def generate_utterances(question, num_variations=3):
     model = get_paraphrase_model()
@@ -82,11 +90,24 @@ def generate_utterances(question, num_variations=3):
     return utterances
 
 def summarize_answer(text):
-    summary_prompt = f"Being direct and concise, summarize: {text}"
-    summary = topic_generator(summary_prompt, max_length=Config.MAX_SENTENCES, num_return_sequences=1)[0]['generated_text']
-    return clean_text(summary)
+    # Enhanced answer summarization
+    summary_prompt = "Create a clear, direct answer from this text: " + text
+    summary = topic_generator(
+        summary_prompt, 
+        max_length=50, 
+        num_return_sequences=1,
+        temperature=0.3
+    )[0]['generated_text']
+    
+    # Clean and format the summary
+    summary = clean_text(summary)
+    if not summary.endswith(('.', '?', '!')):
+        summary += '.'
+    
+    return summary
 
 def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_SIZE):
+    sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
     sentences = sentences[:Config.MAX_SENTENCES]
     qa_pairs = []
     
@@ -94,33 +115,38 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
     gc.collect()
     torch.cuda.empty_cache() if torch.cuda.is_available() else None
     
-    # Process sentences in batches
     for i in range(0, len(sentences), batch_size):
         batch = sentences[i:i + batch_size]
         batch_qa_pairs = []
         
         for sentence in batch:
-            if len(sentence.split()) >= Config.MIN_WORDS_PER_ELEMENT:
-                # Generate concise answer
-                answer = summarize_answer(sentence)
-                
-                # Generate natural question
-                question_prompt = f"Generate a clear and concise question that would be answered by: {answer}"
-                question = question_generator(question_prompt, max_length=Config.MAX_QUESTION_LENGTH)[0]['generated_text']
-                question = clean_text(question)
-                
-                # Generate intent name
-                intent_name = generate_intent_name(answer, url)
-                
-                batch_qa_pairs.append({
-                    "question": question,
-                    "answer": answer,
-                    "intent": intent_name
-                })
+            # Generate concise answer first
+            answer = summarize_answer(sentence)
+            
+            # Generate natural question based on the answer
+            question_prompt = f"Generate a natural question seeking this information: {answer}"
+            question = question_generator(
+                question_prompt, 
+                max_length=50,
+                num_return_sequences=1,
+                temperature=0.5
+            )[0]['generated_text']
+            
+            question = clean_text(question)
+            if not question.endswith('?'):
+                question += '?'
+            
+            # Generate intent name based on the cleaned answer
+            intent_name = generate_intent_name(answer, url)
+            
+            batch_qa_pairs.append({
+                "question": question,
+                "answer": answer,
+                "intent": intent_name
+            })
         
         qa_pairs.extend(batch_qa_pairs)
         
-        # Resource management after each batch
         if i + batch_size < len(sentences):
             gc.collect()
             torch.cuda.empty_cache() if torch.cuda.is_available() else None
