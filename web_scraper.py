@@ -26,6 +26,15 @@ def is_allowed_to_crawl(url):
     except:
         return True
 
+def should_crawl_url(url, hostname, visited):
+    parsed = urlparse(url)
+    return (
+        parsed.scheme in ['http', 'https'] and
+        parsed.netloc == hostname and
+        not url.endswith(Config.SKIP_EXTENSIONS) and
+        normalize_url(url) not in visited
+    )
+    
 def create_session():
     session = requests.Session()
     retry = Retry(
@@ -52,84 +61,47 @@ def fetch_website_content(url, visited=None, max_pages=50):
         "content_lengths": []
     }
     
-    if not is_allowed_to_crawl(url):
-        crawl_stats["errors"].append(f"Crawling not allowed for {url}")
-        return {"content": "", "stats": crawl_stats}
-    
-    texts = []
-    queue = [(url, 0)]
-    hostname = urlparse(url).netloc
-    session = create_session()
-    pages_crawled = 0
-
-    while queue and pages_crawled < max_pages:
-        # Check memory usage before processing each URL
-        memory_usage = check_memory_usage()
-        crawl_stats["memory_usage"].append(memory_usage)
+    try:
+        session = create_session()
+        texts = []
+        queue = [(url, 0)]
+        hostname = urlparse(url).netloc
         
-        if memory_usage > 0.8:  # 80% threshold
-            crawl_stats["errors"].append("Memory usage too high, stopping crawl")
-            break
+        while queue and crawl_stats["pages_crawled"] < max_pages:
+            current_url, depth = queue.pop(0)
+            normalized_url = normalize_url(current_url)
             
-        current_url, depth = queue.pop(0)
-        normalized_url = normalize_url(current_url)
-        
-        if normalized_url in visited or depth > Config.SCRAPING_MAX_DEPTH:
-            crawl_stats["skipped_urls"].append(current_url)
-            continue
-            
-        visited.add(normalized_url)
-        crawl_stats["urls_visited"].append(current_url)
-        
-        try:
-            response = session.get(
-                current_url, 
-                timeout=Config.REQUEST_TIMEOUT,
-                allow_redirects=True
-            )
-            response.raise_for_status()
-            
-            if not 'text/html' in response.headers.get('Content-Type', '').lower():
-                crawl_stats["skipped_urls"].append(current_url)
+            if normalized_url in visited or depth > Config.SCRAPING_MAX_DEPTH:
                 continue
-
-            html_content = response.text
-            crawl_stats["content_lengths"].append(len(html_content))
-            
-            page_text = parse_website_content(html_content)
-            
-            if page_text.strip():
-                texts.append(page_text)
-                pages_crawled += 1
-                crawl_stats["pages_crawled"] = pages_crawled
-
-            if depth < Config.SCRAPING_MAX_DEPTH:
-                soup = BeautifulSoup(html_content, 'lxml')
-                links = soup.find_all('a', href=True)
-                random.shuffle(links)  # Randomize link processing order
                 
-                for link in links:
-                    abs_link = urljoin(current_url, link['href'])
-                    parsed_link = urlparse(abs_link)
+            visited.add(normalized_url)
+            crawl_stats["urls_visited"].append(current_url)
+            
+            response = session.get(current_url, timeout=Config.REQUEST_TIMEOUT)
+            if response.status_code == 200:
+                html_content = response.text
+                page_text = parse_website_content(html_content)
+                
+                if page_text.strip():
+                    texts.append(page_text)
+                    crawl_stats["pages_crawled"] += 1
                     
-                    if (parsed_link.scheme in ['http', 'https'] and
-                        parsed_link.netloc == hostname and
-                        not abs_link.endswith(Config.SKIP_EXTENSIONS) and
-                        normalize_url(abs_link) not in visited):
-                        queue.append((abs_link, depth + 1))
-            
-            # Minimal delay between requests
-            time.sleep(0.1)
-                
-        except requests.exceptions.RequestException as e:
-            crawl_stats["errors"].append(f"Error crawling {current_url}: {str(e)}")
-            continue
-            
+                if depth < Config.SCRAPING_MAX_DEPTH:
+                    soup = BeautifulSoup(html_content, 'lxml')
+                    for link in soup.find_all('a', href=True):
+                        abs_link = urljoin(current_url, link['href'])
+                        if should_crawl_url(abs_link, hostname, visited):
+                            queue.append((abs_link, depth + 1))
+                            
+    except Exception as e:
+        crawl_stats["errors"].append(str(e))
+    finally:
+        session.close()
+        
     return {
         "content": ' '.join(texts) if texts else "",
         "stats": crawl_stats
     }
-
 def parse_website_content(html_content):
     soup = BeautifulSoup(html_content, 'lxml')
     
