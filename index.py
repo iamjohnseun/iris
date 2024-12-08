@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, Response, stream_with_context
+from flask import Flask, request, jsonify
 from validators import url as validate_url
 from main import main
 from config import Config
@@ -24,20 +24,26 @@ def generate_corpus_route():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"status": "error", "message": "Request body is required"}), 400
-
+            return jsonify({
+                "status": "error", 
+                "message": "Request body is required"
+            }), 400
+            
         url = data.get('url')
         if not is_valid_url(url):
-            return jsonify({"status": "error", "message": "Invalid or missing URL in request"}), 400
-
-        # Get the generator from main()
-        result_generator = main(url)
-
-        return Response(stream_with_context(result_generator), mimetype='application/json')
-
+            return jsonify({
+                "status": "error", 
+                "message": "Invalid or missing URL in request"
+            }), 400
+            
+        result = main(url)
+        return jsonify(result)
+        
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 @app.route('/git', methods=['POST'])
 def git_webhook():
