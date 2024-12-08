@@ -10,6 +10,7 @@ nltk.data.path.extend([
 ])
 
 nltk.download('punkt_tab', quiet=True)
+nltk.download('stopwords', quiet=True)
 
 def extract_sentences(text, batch_size=1000):
     sentences = []

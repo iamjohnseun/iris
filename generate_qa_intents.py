@@ -108,7 +108,7 @@ def generate_utterances(question, num_variations=5):
         for var in variations:
             text = clean_text(var['generated_text'])
             if (text.endswith('?') and 
-                len(text.split()) >= 5 and 
+                len(text.split()) >= 3 and 
                 text.isascii() and 
                 text.lower() != question.lower() and
                 text not in seen_texts):
@@ -119,15 +119,23 @@ def generate_utterances(question, num_variations=5):
     return utterances[:num_variations]
 
 def summarize_answer(text):
-    # Use a summarization model
-    summary = summary_generator(
-        text,
-        max_length=50,
-        num_return_sequences=1,
-        clean_up_tokenization_spaces=True
-    )[0]['summary_text']
+    # Generate multiple summaries with different temperatures
+    temperature_range = [0.3, 0.5, 0.7]
+    summaries = []
 
-    return clean_text(summary)
+    for temp in temperature_range:
+        summary_results = summary_generator(
+            text,
+            max_length=50,
+            num_return_sequences=1,
+            temperature=temp,
+            clean_up_tokenization_spaces=True
+        )
+        summary = clean_text(summary_results[0]['summary_text'])
+        if summary:
+            summaries.append(summary)
+
+    return summaries
 
 def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_SIZE):
     sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
@@ -148,18 +156,17 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
                 continue  # Skip if the answer is empty
 
             # Generate a question based on the summarized answer
-            question_result = question_generator(
+            question_results = question_generator(
                 answer,
-                max_length=50,
-                num_return_sequences=1,
+                max_length=Config.MAX_QUESTION_LENGTH,
+                num_return_sequences=5,
                 temperature=0.7,
                 do_sample=True,
                 clean_up_tokenization_spaces=True
             )
 
-            question = clean_text(question_result[0]['generated_text'])
-            if not question.endswith('?'):
-                question += '?'
+            questions = [clean_text(q['generated_text']) for q in question_results]
+            questions = [q if q.endswith('?') else q + '?' for q in questions]
 
             # Generate intent name
             intent_name = generate_intent_name(answer, url)
@@ -167,13 +174,16 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
             # Generate utterances
             utterances = generate_utterances(question)
 
-            if utterances:
-                qa_pairs.append({
-                    "question": question,
-                    "answer": [answer],
-                    "intent": intent_name,
-                    "utterances": utterances
-                })
+            for question in questions:
+                utterances = generate_utterances(question)
+
+                if utterances:
+                    qa_pairs.append({
+                        "question": question,
+                        "answer": [answer],
+                        "intent": intent_name,
+                        "utterances": utterances
+                    })
 
         gc.collect()
         torch.cuda.empty_cache() if torch.cuda.is_available() else None
