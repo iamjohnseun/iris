@@ -2,14 +2,25 @@ from flask import Flask, request, jsonify
 from validators import url as validate_url
 from main import main
 from config import Config
+from urllib.parse import urlparse, urljoin
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
+def normalize_input_url(url):
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+    return url
+
 def is_valid_url(url):
     if not url:
         return False
-    return validate_url(url)
+    normalized_url = normalize_input_url(url)
+    return validate_url(normalized_url)
+
+def is_absolute_path(url):
+    parsed = urlparse(normalize_input_url(url))
+    return bool(parsed.path) and parsed.path != '/' and not parsed.path.rstrip('/') == ''
 
 @app.route('/', methods=['GET'])
 def home():
@@ -35,8 +46,11 @@ def generate_corpus_route():
                 "status": "error", 
                 "message": "Invalid or missing URL in request"
             }), 400
+        
+        normalized_url = normalize_input_url(url) 
+        single_page = is_absolute_path(url)
             
-        result = main(url)
+        result = main(normalized_url, single_page=single_page)
         return jsonify(result)
         
     except Exception as e:
