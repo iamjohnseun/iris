@@ -24,9 +24,9 @@ def main(url, single_page=False):
         sentences = extract_sentences(scraped_content["content"])
         
         if sentences:
-            qa_pairs = generate_questions_and_intents(sentences)
+            qa_pairs = generate_questions_and_intents(sentences, url)
             if qa_pairs:
-                corpus = generate_corpus(qa_pairs, url)
+                corpus = generate_corpus(qa_pairs)
                 result["data"] = corpus
                 result["status"] = "complete"
             else:
