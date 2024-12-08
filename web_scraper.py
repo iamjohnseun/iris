@@ -63,10 +63,7 @@ def fetch_website_content(url, visited=None, max_pages=50):
     pages_crawled = 0
 
     while queue and pages_crawled < max_pages:
-        current_url, depth = queue.pop(0)
-        normalized_url = normalize_url(current_url)
-        
-        # Check memory usage
+        # Check memory usage before processing each URL
         memory_usage = check_memory_usage()
         crawl_stats["memory_usage"].append(memory_usage)
         
@@ -74,6 +71,9 @@ def fetch_website_content(url, visited=None, max_pages=50):
             crawl_stats["errors"].append("Memory usage too high, stopping crawl")
             break
             
+        current_url, depth = queue.pop(0)
+        normalized_url = normalize_url(current_url)
+        
         if normalized_url in visited or depth > Config.SCRAPING_MAX_DEPTH:
             crawl_stats["skipped_urls"].append(current_url)
             continue
@@ -82,7 +82,11 @@ def fetch_website_content(url, visited=None, max_pages=50):
         crawl_stats["urls_visited"].append(current_url)
         
         try:
-            response = session.get(current_url, timeout=Config.REQUEST_TIMEOUT)
+            response = session.get(
+                current_url, 
+                timeout=Config.REQUEST_TIMEOUT,
+                allow_redirects=True
+            )
             response.raise_for_status()
             
             if not 'text/html' in response.headers.get('Content-Type', '').lower():
@@ -101,7 +105,10 @@ def fetch_website_content(url, visited=None, max_pages=50):
 
             if depth < Config.SCRAPING_MAX_DEPTH:
                 soup = BeautifulSoup(html_content, 'lxml')
-                for link in soup.find_all('a', href=True):
+                links = soup.find_all('a', href=True)
+                random.shuffle(links)  # Randomize link processing order
+                
+                for link in links:
                     abs_link = urljoin(current_url, link['href'])
                     parsed_link = urlparse(abs_link)
                     
@@ -111,7 +118,8 @@ def fetch_website_content(url, visited=None, max_pages=50):
                         normalize_url(abs_link) not in visited):
                         queue.append((abs_link, depth + 1))
             
-            time.sleep(random.uniform(Config.SCRAPING_DELAY, Config.SCRAPING_DELAY_MAX))
+            # Minimal delay between requests
+            time.sleep(0.1)
                 
         except requests.exceptions.RequestException as e:
             crawl_stats["errors"].append(f"Error crawling {current_url}: {str(e)}")
@@ -125,7 +133,8 @@ def fetch_website_content(url, visited=None, max_pages=50):
 def parse_website_content(html_content):
     soup = BeautifulSoup(html_content, 'lxml')
     
-    for element in soup(['script', 'style', 'nav', 'footer', 'header']):
+    # Remove unwanted elements
+    for element in soup(['script', 'style', 'nav', 'footer', 'header', 'meta', 'input']):
         element.decompose()
     
     text_chunks = []
@@ -134,7 +143,7 @@ def parse_website_content(html_content):
         elements = soup.find_all(tag)
         for element in elements:
             text = element.get_text(strip=True)
-            if text and len(text) > 20:
+            if text and len(text) > 20:  # Filter out very short texts
                 text_chunks.append(text)
     
     return ' '.join(text_chunks)
