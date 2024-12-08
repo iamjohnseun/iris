@@ -12,7 +12,7 @@ class Config:
     MAX_MEMORY_USAGE = 0.85  # 85% memory threshold for scraping
     FALLBACK_MODE = True  # Enable fallback processing
     MIN_SENTENCES = 10  # Minimum sentences to process
-    MAX_SENTENCES = 100 # Maximum number of sentences to generate
+    MAX_SENTENCES = 150 # Maximum number of sentences to generate
     MAX_PAGES = 20 # Maximum number of pages to crawl
     SCRAPING_MAX_DEPTH = int(os.getenv('SCRAPING_MAX_DEPTH', 5))
     SCRAPING_DELAY = float(os.getenv('SCRAPING_DELAY', 1.0))
