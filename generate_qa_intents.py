@@ -119,7 +119,6 @@ def generate_utterances(question, num_variations=5):
     return utterances[:num_variations]
 
 def summarize_answer(text):
-    # Generate multiple summaries with different temperatures
     temperature_range = [0.3, 0.5, 0.7]
     summaries = []
 
@@ -131,9 +130,10 @@ def summarize_answer(text):
             temperature=temp,
             clean_up_tokenization_spaces=True
         )
-        summary = clean_text(summary_results[0]['summary_text'])
-        if summary:
-            summaries.append(summary)
+        if summary_results and isinstance(summary_results, list):
+            summary = clean_text(summary_results[0]['summary_text'])
+            if summary:
+                summaries.append(summary)
 
     return summaries
 
