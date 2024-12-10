@@ -140,6 +140,7 @@ def summarize_answer(text):
             max_length=max_length,
             num_return_sequences=1,
             temperature=temp,
+            do_sample=True,
             clean_up_tokenization_spaces=True
         )
         if summary_results and isinstance(summary_results, list):
@@ -229,3 +230,18 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
 # sentences = ["Your extracted sentences here..."]
 # qa_pairs = generate_questions_and_intents(sentences)
 # print(qa_pairs)
+
+#DEBUG
+if __name__ == "__main__":
+    test_sentences = ["Atchr helps businesses maximize customer engagement by providing automated website visitor interaction tools and real-time analytics to improve conversion rates."]
+    
+    print(f"Input sentence length: {len(test_sentences[0].split())} words")
+    
+    # Test summarization
+    summaries = summarize_answer(test_sentences[0])
+    print(f"Generated summaries: {summaries}")
+    
+    # Generate full QA pairs
+    results = generate_questions_and_intents(test_sentences, "https://www.atchr.com/")
+    print("Generated QA pairs:")
+    print(results)
