@@ -3,7 +3,7 @@ import os
 class Config:
     DEBUG = os.getenv('DEBUG', False)
     MAX_QUESTION_LENGTH = 100 # Maximum length of a question
-    MAX_INTENT_LENGTH = 50 # Maximum length for intent name
+    MAX_INTENT_LENGTH = 30 # Maximum length for intent name
     MAX_UTTERANCE_LENGTH = 100 # Maximum length for utterances
     MAX_BATCH_SIZE = 1 # Maximum number of questions to process in a single batch
     FALLBACK_MODE = True  # Enable fallback processing
