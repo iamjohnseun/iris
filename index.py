@@ -131,6 +131,13 @@ def git_webhook():
             "message": str(e)
         }), 500
 
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        "status": "error",
+        "message": "Route not found"
+    }), 404
+
 if __name__ == '__main__':
     os.makedirs('download', exist_ok=True)
     app.run(host='0.0.0.0', port=5000, debug=Config.DEBUG)
