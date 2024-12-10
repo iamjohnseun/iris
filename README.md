@@ -40,7 +40,7 @@ python -m nltk.downloader punkt
 
 ##  💻 Usage Examples
 ### 🌐 Using  the API
-
+```bash
 import requests
 
 response = requests.post('http://localhost:5000', 
@@ -49,8 +49,9 @@ response = requests.post('http://localhost:5000',
         'single_page': False
     }
 )
-
+```
 ### 📊 Output Format
+```json
 {
     "status": "complete",
     "data": [
@@ -72,7 +73,7 @@ response = requests.post('http://localhost:5000',
     "url": "https://example.com",
     "errors": []
 }
-
+```
 ## 🔧 Core Components
 ### 🌐 Web Scraper
 - Smart content extraction
