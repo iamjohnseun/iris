@@ -22,7 +22,7 @@ def main(url, single_page=False):
             return result
             
         sentences = extract_sentences(scraped_content["content"])
-        print(f"Extracted {len(sentences)} sentences.")
+        
         if sentences:
             qa_pairs = generate_questions_and_intents(sentences, url)
             if qa_pairs:
