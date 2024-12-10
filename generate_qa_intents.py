@@ -128,23 +128,26 @@ def summarize_answer(text):
     temperature_range = [0.3, 0.5, 0.7]
     summaries = []
 
+    # Calculate the lengths based on the input text length
+    input_length = len(text.split())
+    min_length = max(5, int(input_length * 0.3))  # At least 30% of input length, minimum 5 words
+    max_length = max(min_length + 5, int(input_length * 0.7))  # At least min_length + 5, maximum 70% of input length
+
     for temp in temperature_range:
         summary_results = summary_generator(
             text,
-            max_length=50,
+            min_length=min_length,
+            max_length=max_length,
             num_return_sequences=1,
             temperature=temp,
             clean_up_tokenization_spaces=True
         )
         if summary_results and isinstance(summary_results, list):
             result = summary_results[0]
-            if isinstance(result, dict):
-                if 'summary_text' in result:
-                    summary = clean_text(result['summary_text'])
-                elif 'generated_text' in result:
-                    summary = clean_text(result['generated_text'])
-                else:
-                    summary = clean_text(''.join(result.values()))
+            if isinstance(result, dict) and 'summary_text' in result:
+                summary = clean_text(result['summary_text'])
+            elif isinstance(result, dict) and 'generated_text' in result:
+                summary = clean_text(result['generated_text'])
             elif isinstance(result, str):
                 summary = clean_text(result)
             else:
@@ -154,7 +157,6 @@ def summarize_answer(text):
                 summaries.append(summary)
 
     return summaries
-
 
 def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_SIZE):
     sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
@@ -172,35 +174,32 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
             # Summarize the sentence to get concise answers
             summaries = summarize_answer(sentence)
             if not summaries:
-                continue  # Skip if summaries list is empty
+                continue 
 
-            # Use the first summary as the answer
-            answer = summaries[0]
+            for answer in summaries:
+                # Generate questions based on the summarized answer
+                question_results = question_generator(
+                    answer,
+                    max_length=Config.MAX_QUESTION_LENGTH,
+                    num_return_sequences=5,
+                    temperature=0.7,
+                    do_sample=True,
+                    clean_up_tokenization_spaces=True
+                )
 
-            # Generate questions based on the summarized answer
-            question_results = question_generator(
-                answer,
-                max_length=Config.MAX_QUESTION_LENGTH,
-                num_return_sequences=5,
-                temperature=0.7,
-                do_sample=True,
-                clean_up_tokenization_spaces=True
-            )
-
-            questions = []
-            for result in question_results:
-                # Check the output format and extract the question text
-                if isinstance(result, dict):
-                    if 'generated_text' in result:
-                        question = clean_text(result['generated_text'])
-                    elif 'question' in result:
-                        question = clean_text(result['question'])
+                questions = []
+                for result in question_results:
+                    if isinstance(result, dict):
+                        if 'generated_text' in result:
+                            question = clean_text(result['generated_text'])
+                        elif 'question' in result:
+                            question = clean_text(result['question'])
+                        else:
+                            question = clean_text(''.join(result.values()))
+                    elif isinstance(result, str):
+                        question = clean_text(result)
                     else:
-                        question = clean_text(''.join(result.values()))
-                elif isinstance(result, str):
-                    question = clean_text(result)
-                else:
-                    continue  # Skip if the result format is unexpected
+                        continue # Skip if the result format is unexpected
 
                 if not question.endswith('?'):
                     question += '?'

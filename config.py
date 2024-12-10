@@ -4,7 +4,7 @@ class Config:
     DEBUG = os.getenv('DEBUG', False)
     MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8 MB
     MAX_QUESTION_LENGTH = 50 # Maximum length of a question
-    MAX_INTENT_LENGTH = 40 # Maximum length for intent name
+    MAX_INTENT_LENGTH = 50 # Maximum length for intent name
     MAX_UTTERANCE_LENGTH = 60 # Maximum length for utterances
     MAX_BATCH_SIZE = 2 # Maximum number of questions to process in a single batch
     TORCH_THREADS = 2 # Number of threads for PyTorch
@@ -12,7 +12,7 @@ class Config:
     MAX_MEMORY_USAGE = 0.85  # 85% memory threshold for scraping
     FALLBACK_MODE = True  # Enable fallback processing
     MIN_SENTENCES = 10  # Minimum sentences to process
-    MAX_SENTENCES = 150 # Maximum number of sentences to generate
+    MAX_SENTENCES = 200 # Maximum number of sentences to generate
     MAX_PAGES = 20 # Maximum number of pages to crawl
     SCRAPING_MAX_DEPTH = int(os.getenv('SCRAPING_MAX_DEPTH', 5))
     SCRAPING_DELAY = float(os.getenv('SCRAPING_DELAY', 1.0))
