@@ -99,16 +99,3 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
 # sentences = ["Your extracted sentences here..."]
 # qa_pairs = generate_questions_and_intents(sentences)
 # print(qa_pairs)
-
-# TESTING
-if __name__ == "__main__":
-    test_sentences = [
-        "Atchr helps businesses maximize customer engagement by providing automated website visitor interaction tools and real-time analytics to improve conversion rates."
-    ]
-    
-    print(f"\nInput sentence length: {len(test_sentences[0].split())} words")
-    print(f"\nFiltered sentences: {test_sentences}")
-    
-    results = generate_questions_and_intents(test_sentences, "https://www.atchr.com/")
-    print("\nGenerated QA pairs:")
-    print(results)
