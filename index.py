@@ -138,6 +138,13 @@ def not_found(error):
         "message": "Route not found"
     }), 404
 
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return jsonify({
+        "status": "error",
+        "message": "Method not allowed for this endpoint"
+    }), 405
+
 if __name__ == '__main__':
     os.makedirs('download', exist_ok=True)
     app.run(host='0.0.0.0', port=5000, debug=Config.DEBUG)
