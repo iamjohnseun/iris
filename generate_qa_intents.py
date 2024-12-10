@@ -86,7 +86,7 @@ def generate_utterances(question, num_variations=5):
         question += '?'
     
     # Define temperature range for diversity
-    temperature_range = [0.6, 0.7, 0.8]
+    temperature_range = [0.6, 0.9, 1.0]
     
     utterances = []
     seen_texts = set()
@@ -125,7 +125,7 @@ def generate_utterances(question, num_variations=5):
     return utterances[:num_variations]
 
 def summarize_answer(text):
-    temperature_range = [0.3, 0.5, 0.7]
+    temperature_range = [0.3, 0.5, 0.9]
     summaries = []
 
     # Calculate the lengths based on the input text length
