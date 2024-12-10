@@ -32,7 +32,7 @@ def process_website_task(self, url, single_page=False):
     
     try:
         for i in range(0, len(urls), batch_size):
-            if check_memory_usage() > 0.9:  # 90% memory threshold
+            if check_memory_usage() >= 0.9:  # 90% memory threshold
                 gc.collect()
                 torch.cuda.empty_cache()
                 
@@ -65,6 +65,12 @@ def process_website_task(self, url, single_page=False):
                 }
             )
             
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': str(e)
+        }
+            
     finally:
         # Cleanup
         del qa_model
@@ -75,7 +81,7 @@ def process_website_task(self, url, single_page=False):
     return {
         'status': 'complete',
         'filename': output_file,
-        'url': f"/download/{output_file}",
+        'url': f"{Config.APP_URL}/download/{output_file}",
         'total_processed': processed_pages,
         'total_qa_pairs': len(all_results)
     }

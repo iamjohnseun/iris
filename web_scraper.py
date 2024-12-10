@@ -1,7 +1,6 @@
 import gc
 import requests
 import time
-import random
 import psutil
 from urllib.parse import urljoin, urlparse, urlunparse
 from bs4 import BeautifulSoup
@@ -46,6 +45,35 @@ def create_session():
     })
     return session
 
+def get_urls_to_process(base_url, single_page=False):
+    session = create_session()
+    urls = {normalize_url(base_url)}
+    
+    if single_page:
+        return list(urls)
+        
+    try:
+        response = session.get(base_url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        base_domain = urlparse(base_url).netloc
+        
+        for link in soup.find_all('a'):
+            href = link.get('href')
+            if href:
+                full_url = urljoin(base_url, href)
+                normalized_url = normalize_url(full_url)
+                if urlparse(normalized_url).netloc == base_domain:
+                    urls.add(normalized_url)
+                    
+                if check_memory_usage() > 0.9:
+                    gc.collect()
+                    break
+                    
+    except Exception as e:
+        print(f"Error collecting URLs from {base_url}: {str(e)}")
+        
+    return list(urls)
+
 def parse_website_content(soup):
     # Remove unwanted elements
     for element in soup.find_all(Config.EXCLUDED_ELEMENTS):
@@ -69,6 +97,16 @@ def parse_website_content(soup):
                 content.append(text)
 
     return ' '.join(content)
+
+
+def process_batch(urls):
+    session = create_session()
+    results = []
+    
+    for url in urls:
+        result = fetch_website_content(url, single_page=True)
+        results.append(result)
+    return results
 
 def fetch_website_content(url, single_page=False):
     result = {
@@ -139,7 +177,7 @@ def fetch_website_content(url, single_page=False):
             # Memory management
             current_memory = check_memory_usage()
             result["stats"]["memory_usage"] = current_memory
-            if current_memory > Config.MAX_MEMORY_USAGE:
+            if current_memory >= Config.MAX_MEMORY_USAGE:
                 gc.collect()
                 result["errors"].append("Memory usage threshold reached")
                 break
@@ -150,7 +188,6 @@ def fetch_website_content(url, single_page=False):
             
         # time.sleep(random.uniform(0.1, 0.3))
         
-        # Break after first page if single_page mode
         if single_page:
             break
     

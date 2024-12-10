@@ -1,7 +1,7 @@
 import os
 import time
 
-def cleanup_old_files(directory='downloads', max_age_hours=24):
+def cleanup_old_files(directory='download', max_age_hours=24):
     current_time = time.time()
     
     for filename in os.listdir(directory):

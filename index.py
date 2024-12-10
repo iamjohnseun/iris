@@ -113,7 +113,7 @@ def get_status(task_id):
 
 @app.route('/download/<filename>')
 def download_file(filename):
-    if not os.path.exists(os.path.join('downloads', filename)):
+    if not os.path.exists(os.path.join('download', filename)):
         return jsonify({'error': 'File not found'}), 404
     return send_from_directory('download', filename)
     
