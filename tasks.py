@@ -3,6 +3,7 @@ import json
 import uuid
 import gc
 import torch
+from config import Config
 from urllib.parse import urlparse
 from celery_config import celery_app
 from web_scraper import get_urls_to_process, process_batch, check_memory_usage
@@ -18,7 +19,7 @@ def get_output_filename(url, job_id):
 def process_website_task(self, url, single_page=False):
     job_id = str(uuid.uuid4())[:8]
     output_file = get_output_filename(url, job_id)
-    output_path = os.path.join('downloads', output_file)
+    output_path = os.path.join('download', output_file)
     
     urls = get_urls_to_process(url, single_page)
     total_urls = len(urls)
@@ -60,7 +61,7 @@ def process_website_task(self, url, single_page=False):
                     'current': processed_pages,
                     'total': total_urls,
                     'status': f'Processing batch {i//batch_size + 1} of {(total_urls + batch_size - 1)//batch_size}',
-                    'download_url': f"/download/{output_file}"
+                    'url': f"{Config.APP_URL}/download/{output_file}"
                 }
             )
             
