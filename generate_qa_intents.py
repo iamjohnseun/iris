@@ -79,10 +79,8 @@ def generate_intent_name(text, url):
 def generate_utterances(question, num_variations=5):
     model = get_paraphrase_model()
     
-    # Increase variations for more diversity
     num_variations = max(7, num_variations)
     
-    # Clean and standardize the question
     question = clean_text(question)
     if not question.endswith('?'):
         question += '?'
@@ -106,7 +104,16 @@ def generate_utterances(question, num_variations=5):
         )
         
         for var in variations:
-            text = clean_text(var['generated_text'])
+            if isinstance(var, dict):
+                if 'generated_text' in var:
+                    text = clean_text(var['generated_text'])
+                else:
+                    text = clean_text(''.join(var.values()))
+            elif isinstance(var, str):
+                text = clean_text(var)
+            else:
+                continue
+
             if (text.endswith('?') and 
                 len(text.split()) >= 3 and 
                 text.isascii() and 
@@ -115,7 +122,6 @@ def generate_utterances(question, num_variations=5):
                     utterances.append(text)
                     seen_texts.add(text)
     
-    # Return unique utterances up to the requested number
     return utterances[:num_variations]
 
 def summarize_answer(text):
@@ -131,11 +137,24 @@ def summarize_answer(text):
             clean_up_tokenization_spaces=True
         )
         if summary_results and isinstance(summary_results, list):
-            summary = clean_text(summary_results[0]['summary_text'])
+            result = summary_results[0]
+            if isinstance(result, dict):
+                if 'summary_text' in result:
+                    summary = clean_text(result['summary_text'])
+                elif 'generated_text' in result:
+                    summary = clean_text(result['generated_text'])
+                else:
+                    summary = clean_text(''.join(result.values()))
+            elif isinstance(result, str):
+                summary = clean_text(result)
+            else:
+                continue
+
             if summary:
                 summaries.append(summary)
 
     return summaries
+
 
 def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_SIZE):
     sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
@@ -150,12 +169,15 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
         batch = sentences[i:i + batch_size]
 
         for sentence in batch:
-            # Summarize the sentence to get a concise answer
-            answer = summarize_answer(sentence)
-            if not answer:
-                continue  # Skip if the answer is empty
+            # Summarize the sentence to get concise answers
+            summaries = summarize_answer(sentence)
+            if not summaries:
+                continue  # Skip if summaries list is empty
 
-            # Generate a question based on the summarized answer
+            # Use the first summary as the answer
+            answer = summaries[0]
+
+            # Generate questions based on the summarized answer
             question_results = question_generator(
                 answer,
                 max_length=Config.MAX_QUESTION_LENGTH,
@@ -165,15 +187,29 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
                 clean_up_tokenization_spaces=True
             )
 
-            questions = [clean_text(q['generated_text']) for q in question_results]
-            questions = [q if q.endswith('?') else q + '?' for q in questions]
+            questions = []
+            for result in question_results:
+                # Check the output format and extract the question text
+                if isinstance(result, dict):
+                    if 'generated_text' in result:
+                        question = clean_text(result['generated_text'])
+                    elif 'question' in result:
+                        question = clean_text(result['question'])
+                    else:
+                        question = clean_text(''.join(result.values()))
+                elif isinstance(result, str):
+                    question = clean_text(result)
+                else:
+                    continue  # Skip if the result format is unexpected
+
+                if not question.endswith('?'):
+                    question += '?'
+                questions.append(question)
 
             # Generate intent name
             intent_name = generate_intent_name(answer, url)
 
-            # Generate utterances
-            utterances = generate_utterances(question)
-
+            # Generate utterances for each question
             for question in questions:
                 utterances = generate_utterances(question)
 
