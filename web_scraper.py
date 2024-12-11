@@ -64,7 +64,7 @@ def parse_website_content(soup):
     for tag in content_tags:
         elements = soup.find_all(tag)
         for element in elements:
-            text = element.get_text(strip=True)
+            text = ' '.join(element.get_text().split())
             if text and len(text.split()) > Config.MIN_WORDS_PER_ELEMENT:
                 content.append(text)
 
