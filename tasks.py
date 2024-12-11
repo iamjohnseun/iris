@@ -32,7 +32,7 @@ def process_website_task(self, url, single_page=False):
     
     try:
         for i in range(0, len(urls), batch_size):
-            if check_memory_usage() >= 0.9:  # 90% memory threshold
+            if check_memory_usage() >= Config.MAX_MEMORY_USAGE:
                 gc.collect()
                 torch.cuda.empty_cache()
                 
