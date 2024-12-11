@@ -26,8 +26,8 @@ def main(url, single_page=False):
         if sentences:
             qa_pairs = generate_questions_and_intents(sentences, url)
             if qa_pairs:
-                corpus = generate_corpus(qa_pairs)
-                result["data"] = corpus
+                # corpus = generate_corpus(qa_pairs)
+                result["data"] = qa_pairs
                 result["status"] = "complete"
             else:
                 result["errors"].append("No QA pairs generated")
