@@ -43,7 +43,8 @@ def process_website_task(self, url, single_page=False):
             qa_pairs = []
             for page in batch_results:
                 cleaned_text = clean_text(page['content'])
-                qa_response = qa_model(f"Generate questions and answers from: {cleaned_text}")
+                # qa_response = qa_model(f"Generate questions and answers from: {cleaned_text}")
+                qa_response = qa_model(f"Generate different frequently asked questions (FAQ's) and answers from: {cleaned_text}")
                 qa_pairs.extend(qa_response)
             
             # Generate corpus with utterances
