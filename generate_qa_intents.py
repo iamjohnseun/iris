@@ -11,12 +11,16 @@ _model = None
 def get_model():
     global _model
     if _model is None:
+        torch.cuda.empty_cache()
+        gc.collect()
         _model = pipeline(
             'text2text-generation',
             model='google/flan-t5-large',
-            device='cpu'
+            device='cpu',
+            model_kwargs={'low_cpu_mem_usage': True}
         )
     return _model
+
 
 def clean_text(text):
     text = re.sub(r'\s+', ' ', text)
