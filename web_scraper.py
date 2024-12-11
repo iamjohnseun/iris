@@ -141,7 +141,7 @@ def fetch_website_content(url, single_page=False):
             # Memory management
             current_memory = check_memory_usage()
             result["stats"]["memory_usage"] = current_memory
-            if current_memory > Config.MAX_MEMORY_USAGE:
+            if current_memory >= Config.MAX_MEMORY_USAGE:
                 gc.collect()
                 result["errors"].append("Memory usage threshold reached")
                 break
