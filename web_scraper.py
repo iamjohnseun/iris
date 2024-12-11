@@ -135,6 +135,8 @@ def fetch_website_content(url, single_page=False):
         rp.read()
     except Exception as e:
         result["errors"].append(f"Failed to read robots.txt: {str(e)}")
+        # Set rp to None to indicate robots.txt is not available
+        rp = None
     
     while urls_to_visit and len(visited_urls) < Config.MAX_PAGES:
         current_url = urls_to_visit.pop()
@@ -142,7 +144,7 @@ def fetch_website_content(url, single_page=False):
         if current_url in visited_urls:
             continue
             
-        if not is_allowed_to_crawl(current_url, rp):
+        if rp is not None and not is_allowed_to_crawl(current_url, rp):
             result["errors"].append(f"URL not allowed by robots.txt: {current_url}")
             continue
             
