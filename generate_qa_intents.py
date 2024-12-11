@@ -47,7 +47,7 @@ def generate_utterances(text, num_variations=5):
     utterances = set()
     
     for temp in temperatures:
-        prompt = f"Generate {num_variations} different ways to ask about: {text}"
+        prompt = f"Generate {num_variations} different frequently asked questions (FAQ's) from: {text}"
         variations = model(
             prompt,
             max_length=Config.MAX_UTTERANCE_LENGTH,
