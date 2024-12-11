@@ -21,7 +21,6 @@ def get_model():
         )
     return _model
 
-
 def clean_text(text):
     text = re.sub(r'\s+', ' ', text)
     text = re.sub(r'[^\w\s.,!?$€£¥%@#&*()\-]', '', text)
