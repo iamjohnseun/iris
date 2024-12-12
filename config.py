@@ -2,6 +2,7 @@ import os
 
 class Config:
     DEBUG = os.getenv('DEBUG', False)
+    APP_URL = 'https://iris.chromesq.com'
     MAX_QUESTION_LENGTH = 100 # Maximum length of a question
     MAX_INTENT_LENGTH = 30 # Maximum length for intent name
     MAX_UTTERANCE_LENGTH = 55 # Maximum length for utterances
