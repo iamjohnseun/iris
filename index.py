@@ -3,10 +3,12 @@ import requests
 from flask import Flask, jsonify, request, send_from_directory
 from validators import url as validate_url
 from celery.result import AsyncResult
-from tasks import process_website_task
-from main import main
-from config import Config
 from urllib.parse import urlparse
+
+from config import Config
+from main import main
+from tasks import process_website_task
+from web_scraper import get_urls_to_process
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -42,6 +44,35 @@ def home():
         "version": "1.0"
     })
 
+@app.route('/', methods=['POST'])
+def generate_corpus_route():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                "status": "error", 
+                "message": "Request body is required"
+            }), 400
+            
+        url = data.get('url')
+        if not is_valid_url(url):
+            return jsonify({
+                "status": "error", 
+                "message": "Invalid or missing URL in request"
+            }), 400
+        
+        normalized_url = normalize_input_url(url) 
+        single_page = is_absolute_path(url)
+            
+        result = main(normalized_url, single_page=single_page)
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 @app.route('/process', methods=['POST'])
 def process_website():
     try:
@@ -60,9 +91,16 @@ def process_website():
             }), 400
         
         url = normalize_input_url(url)
-        single_page = data.get('synchronous') if data.get('synchronous') is not None else is_absolute_path(url)
-                    
-        if single_page or is_small_website(url):
+        single_page = is_absolute_path(url)
+        
+        if data.get('synchronous') is not None:
+            result = main(url, single_page=single_page)
+            return jsonify(result)
+        
+        urls = get_urls_to_process(url, single_page)
+        total_urls = len(urls)  
+                 
+        if single_page or total_urls <= Config.SYNCHRONOUS_THRESHOLD or is_small_website(url):
             # Synchronous processing
             result = process_website_task.apply(args=[url, single_page])
             return jsonify(result.get())
@@ -81,7 +119,7 @@ def process_website():
             "message": str(e)
         }), 500
         
-@app.route('/status/<task_id>')
+@app.route('/status/<task_id>', methods=['GET'])
 def get_status(task_id):
     task = AsyncResult(task_id)
     
