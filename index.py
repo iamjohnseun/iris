@@ -85,7 +85,13 @@ def process_website():
             }), 400
             
         url = data.get('url')
-        url_list = data.get('urls', [])
+        url_list = data.get('urls') or []
+        
+        if not isinstance(url_list, list):
+            return jsonify({
+                "status": "error", 
+                "message": "The provided 'urls' must be a list"
+            }), 400
         
         if url_list and url:
             url_list = [url for url in url_list if is_valid_url(url)]
@@ -110,6 +116,13 @@ def process_website():
         else:  # Single URL case
             single_page = is_absolute_path(url_list[0])
             urls = get_urls_to_process(url_list[0], single_page)
+            
+            if not urls:
+                return jsonify({
+                    "status": "error",
+                    "message": "No URLs found to process"
+                }), 400
+                
             total_urls = len(urls)
             
             if single_page or total_urls <= Config.SYNCHRONOUS_THRESHOLD or is_small_website(url_list[0]):
