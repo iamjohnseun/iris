@@ -28,7 +28,7 @@ def is_small_website(url):
     try:
         response = requests.get(url)
         content_length = len(response.content)
-        return content_length < 500000  # 500KB threshold
+        return content_length < Config.SMALL_WEBSITE_THRESHOLD
     except:
         return True
 
