@@ -18,6 +18,7 @@ class Config:
     CACHE_ENABLED = os.getenv('CACHE_ENABLED', True)
     CACHE_TIMEOUT = int(os.getenv('CACHE_TIMEOUT', 3600))  # 1 hour
     MIN_WORDS_PER_ELEMENT = 3  # Minimum words for a content element to be valid
+    SYNCHRONOUS_THRESHOLD = 10
     
     # Content extraction configuration
     CONTENT_TAGS = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'td', 'article', 'section']
