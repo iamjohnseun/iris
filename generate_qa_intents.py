@@ -3,7 +3,6 @@ import gc
 import re
 import signal
 from config import Config
-from functools import timeout
 from transformers import pipeline
 from urllib.parse import urlparse
 from rake_nltk import Rake
