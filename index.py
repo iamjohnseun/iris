@@ -164,7 +164,7 @@ def download_file(filename):
     return send_from_directory('download', filename)
     
 
-@app.route('/git', methods=['POST'])
+@app.route('/git', methods=['POST', 'GET'])
 def git_webhook():
     try:
         import subprocess
