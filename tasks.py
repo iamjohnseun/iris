@@ -7,7 +7,6 @@ from config import Config
 from urllib.parse import urlparse
 from celery_config import celery_app
 from web_scraper import get_urls_to_process, process_batch, check_memory_usage
-from generate_corpus import generate_corpus
 from generate_qa_intents import get_model, clean_text
 from generate_utterances import get_paraphrase_model
 
@@ -17,6 +16,9 @@ def get_output_filename(url, job_id):
 
 @celery_app.task(bind=True)
 def process_website_task(self, url, single_page=False):
+    # Create download directory if it doesn't exist
+    os.makedirs('download', exist_ok=True)
+    
     job_id = str(uuid.uuid4())[:8]
     output_file = get_output_filename(url, job_id)
     output_path = os.path.join('download', output_file)
@@ -48,8 +50,7 @@ def process_website_task(self, url, single_page=False):
                 qa_pairs.extend(qa_response)
             
             # Generate corpus with utterances
-            corpus = generate_corpus(qa_pairs)
-            all_results.extend(corpus)
+            all_results.extend(qa_pairs)
             
             # Save intermediate results
             with open(output_path, 'w') as f:
