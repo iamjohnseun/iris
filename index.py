@@ -3,6 +3,7 @@ from validators import url as validate_url
 from main import main
 from config import Config
 from urllib.parse import urlparse, urljoin
+from requests.exceptions import Timeout
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -72,5 +73,27 @@ def git_webhook():
             "message": str(e)
         }), 500
 
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({
+        "status": "error",
+        "message": "Route not found"
+    }), 404
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return jsonify({
+        "status": "error",
+        "message": "Method not allowed for this endpoint"
+    }), 405
+    
+@app.errorhandler(Timeout)
+def handle_timeout(error):
+    return jsonify({
+        "status": "error",
+        "message": "Request timed out. Please try again later.",
+        "error_type": "timeout"
+    }), 504
+    
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

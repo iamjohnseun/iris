@@ -1,12 +1,17 @@
 import torch
 import gc
 import re
-from transformers import pipeline
+import signal
 from config import Config
+from functools import timeout
+from transformers import pipeline
 from urllib.parse import urlparse
 from rake_nltk import Rake
 
 _model = None
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("Generation task exceeded time limit")
 
 def get_model():
     global _model
@@ -70,34 +75,42 @@ def generate_utterances(text, num_variations=5):
     return list(utterances)[:num_variations]
 
 def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_SIZE):
-    sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
-    sentences = sentences[:Config.MAX_SENTENCES]
-    qa_pairs = []
+    try:
+        sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
+        sentences = sentences[:Config.MAX_SENTENCES]
+        qa_pairs = []
 
-    torch.set_num_threads(Config.TORCH_THREADS)
-    gc.collect()
-    torch.cuda.empty_cache() if torch.cuda.is_available() else None
-
-    for i in range(0, len(sentences), batch_size):
-        batch = sentences[i:i + batch_size]
-        
-        for text in batch:
-            text = clean_text(text)
-            intent_name = generate_intent_name(text, url)
-            utterances = generate_utterances(text)
-            
-            if utterances:
-                qa_pairs.append({
-                    "intent": intent_name,
-                    "utterances": utterances,
-                    "answer": [text]
-                })
-
+        torch.set_num_threads(Config.TORCH_THREADS)
         gc.collect()
         torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
-    return qa_pairs
+        for i in range(0, len(sentences), batch_size):
+            batch = sentences[i:i + batch_size]
+            
+            for text in batch:
+                text = clean_text(text)
+                intent_name = generate_intent_name(text, url)
+                utterances = generate_utterances(text)
+                
+                if utterances:
+                    qa_pairs.append({
+                        "intent": intent_name,
+                        "utterances": utterances,
+                        "answer": [text]
+                    })
 
+            gc.collect()
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+
+        signal.alarm(0)
+        return qa_pairs
+    except TimeoutError:
+        return {
+            "status": "error",
+            "message": "Generation task exceeded time limit",
+            "error_type": "timeout"
+        }
+        
 # USAGE
 # sentences = ["Your extracted sentences here..."]
 # qa_pairs = generate_questions_and_intents(sentences)

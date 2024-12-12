@@ -7,6 +7,7 @@ from urllib.parse import urljoin, urlparse, urlunparse
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from requests.exceptions import Timeout
 from urllib.robotparser import RobotFileParser
 from config import Config
 
@@ -34,7 +35,7 @@ def should_crawl_url(url, base_domain):
 
 def create_session():
     session = requests.Session()
-    retry = Retry(connect=3, backoff_factor=0.5)
+    retry = Retry(connect=3, backoff_factor=0.5, status_forcelist=[429, 500, 502, 503, 504])
     adapter = HTTPAdapter(max_retries=retry)
     session.mount('http://', adapter)
     session.mount('https://', adapter)
@@ -149,6 +150,13 @@ def fetch_website_content(url, single_page=False):
         except Exception as e:
             result["errors"].append(f"Error scraping {current_url}: {str(e)}")
             continue
+        
+        except Timeout:
+            return {
+                "status": "error",
+                "message": "Request timed out",
+                "error_type": "timeout"
+            }
             
         # time.sleep(random.uniform(0.1, 0.3))
         

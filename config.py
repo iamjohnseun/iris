@@ -38,3 +38,6 @@ class Config:
     MEMORY_THRESHOLD = 0.8  # 80% memory usage threshold
     MAX_MEMORY_USAGE = 0.85  # 85% memory threshold for scraping
     MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8 MB
+    
+    REQUEST_TIMEOUT = 300
+    GENERATION_TIMEOUT = 299
