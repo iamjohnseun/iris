@@ -74,6 +74,8 @@ def generate_utterances(text, num_variations=5):
     return list(utterances)[:num_variations]
 
 def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_SIZE):
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(Config.GENERATION_TIMEOUT)
     try:
         sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
         sentences = sentences[:Config.MAX_SENTENCES]
@@ -101,7 +103,6 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
             gc.collect()
             torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
-        signal.alarm(0)
         return qa_pairs
     except TimeoutError:
         return {
@@ -109,6 +110,8 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
             "message": "Generation task exceeded time limit",
             "error_type": "timeout"
         }
+    finally:
+        signal.alarm(0)
         
 # USAGE
 # sentences = ["Your extracted sentences here..."]
