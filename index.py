@@ -73,7 +73,7 @@ def generate_corpus_route():
             "message": str(e)
         }), 500
 
-@app.route('/process', methods=['POST'])
+@app.route('/process', methods=['POST'])        
 def process_website():
     try:
         data = request.get_json()
@@ -84,34 +84,45 @@ def process_website():
             }), 400
             
         url = data.get('url')
-        if not is_valid_url(url):
+        url_list = data.get('urls', [])
+        
+        if url_list and url:
+            url_list = [url for url in url_list if is_valid_url(url)]
+        elif url:
+            url_list = [url] if is_valid_url(url) else []
+            
+        if not url_list:
             return jsonify({
                 "status": "error", 
                 "message": "Invalid or missing URL in request"
             }), 400
         
-        url = normalize_input_url(url)
-        single_page = is_absolute_path(url)
+        url_list = [normalize_input_url(url) for url in url_list]
         
-        if data.get('synchronous') is not None:
-            result = main(url, single_page=single_page)
-            return jsonify(result)
-        
-        urls = get_urls_to_process(url, single_page)
-        total_urls = len(urls)  
-                 
-        if single_page or total_urls <= Config.SYNCHRONOUS_THRESHOLD or is_small_website(url):
-            # Synchronous processing
-            result = process_website_task.apply(args=[url, single_page])
-            return jsonify(result.get())
-        else:
-            # Asynchronous processing
-            task = process_website_task.delay(url, single_page)
+        if len(url_list) > 1:
+            task = process_website_task.delay(url_list, single_page=False)
             return jsonify({
                 'task_id': task.id,
                 'status': 'processing',
                 'status_url': f'{Config.APP_URL}/status/{task.id}'
             })
+        else:  # Single URL case
+            single_page = is_absolute_path(url_list[0])
+            urls = get_urls_to_process(url_list[0], single_page)
+            total_urls = len(urls)
+            
+            if single_page or total_urls <= Config.SYNCHRONOUS_THRESHOLD or is_small_website(url_list[0]):
+                # Synchronous processing
+                result = process_website_task.apply(args=[url_list[0], single_page])
+                return jsonify(result.get())
+            else:
+                # Asynchronous processing
+                task = process_website_task.delay(url_list[0], single_page)
+                return jsonify({
+                    'task_id': task.id,
+                    'status': 'processing',
+                    'status_url': f'{Config.APP_URL}/status/{task.id}'
+                })
         
     except Exception as e:
         return jsonify({
