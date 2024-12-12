@@ -168,15 +168,18 @@ def download_file(filename):
 def git_webhook():
     try:
         import subprocess
+        from datetime import datetime
         subprocess.run(['git', 'pull'], cwd='/var/www/iris')
         subprocess.run(['systemctl', 'restart', 'iris'])
-        return jsonify({"status": "updated"})
+        return jsonify({
+            "status": "updated",
+            "timestamp": datetime.now().isoformat()
+        })
     except Exception as e:
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
-
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({
