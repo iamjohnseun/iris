@@ -28,9 +28,12 @@ def is_small_website(url):
     try:
         response = requests.get(url, timeout=Config.SYNCHRONOUS_THRESHOLD)
         response.raise_for_status()
-        content_length = len(response.content) if response.content else 0
+        if response.content is not None:
+            content_length = len(response.content)
+        else:
+            content_length = 0
         return content_length < Config.SMALL_WEBSITE_THRESHOLD
-    except (requests.RequestException, AttributeError):
+    except Exception as e:
         return False
 
 def is_absolute_path(url):
