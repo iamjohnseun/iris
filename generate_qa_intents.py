@@ -58,7 +58,7 @@ def generate_utterances(text, num_variations=5):
     model = get_model()
     text = clean_text(text)
     
-    temperatures = [0.8, 0.9, 1.0]
+    temperatures = [0.6, 0.8, 0.9]
     utterances = set()
     
     for temp in temperatures:
