@@ -128,8 +128,7 @@ def process_website():
                 
             total_urls = len(urls)
             
-            # if single_page or total_urls <= Config.SYNCHRONOUS_THRESHOLD or is_small_website(url_list[0]):
-            if single_page or total_urls <= Config.SYNCHRONOUS_THRESHOLD:
+            if single_page or (total_urls <= Config.SYNCHRONOUS_THRESHOLD and is_small_website(url_list[0])):
                 # Synchronous processing
                 result = process_website_task.apply(args=[url_list[0], single_page])
                 return jsonify(result.get())
