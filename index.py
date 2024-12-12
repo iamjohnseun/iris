@@ -26,11 +26,12 @@ def is_valid_url(url):
 
 def is_small_website(url):
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=Config.SYNCHRONOUS_THRESHOLD)
+        response.raise_for_status()
         content_length = len(response.content)
         return content_length < Config.SMALL_WEBSITE_THRESHOLD
-    except:
-        return True
+    except (requests.RequestException, AttributeError):
+        return False
 
 def is_absolute_path(url):
     parsed = urlparse(normalize_input_url(url))
