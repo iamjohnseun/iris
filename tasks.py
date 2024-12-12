@@ -41,8 +41,6 @@ def process_website_task(self, url, single_page=False):
         result.update({
             'filename': output_file,
             'url': f"{Config.APP_URL}/download/{output_file}",
-            'task_id': self.request.id,
-            'status_url': f"{Config.APP_URL}/status/{self.request.id}",
             'total_processed': total_urls,
             'total_qa_pairs': len(result.get('data', []))
         })
