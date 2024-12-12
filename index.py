@@ -28,6 +28,8 @@ def is_small_website(url):
     try:
         response = requests.get(url, timeout=Config.SYNCHRONOUS_THRESHOLD)
         response.raise_for_status()
+        if response.content is None:
+            return False
         content_length = len(response.content)
         return content_length < Config.SMALL_WEBSITE_THRESHOLD
     except (requests.RequestException, AttributeError):
