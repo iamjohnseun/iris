@@ -31,6 +31,16 @@ def clean_text(text):
     text = text.replace('..', '.').replace(',,', ',')
     return text.strip()
 
+def clean_intent_name(text):
+    text = re.sub(r'[\d_]+', '', text)
+    text = re.sub(r'\s+', ' ', text)
+    text = text.lower().strip().replace(' ', '.')
+    text = re.sub(r'\.+$', '', text)
+    words = text.split('.')
+    if len(words) > 3:
+        words = words[:3]
+    return '.'.join(words)
+
 def generate_intent_name(text, url):
     path = urlparse(url).path.strip('/')
     page_context = path.split('/')[-1] if path else 'general'
@@ -41,6 +51,7 @@ def generate_intent_name(text, url):
     topic = keywords[0] if keywords else 'general'
     
     intent_name = f"{page_context}.{topic}".lower().replace(' ', '_')
+    intent_name = clean_intent_name(intent_name)
     return intent_name[:Config.MAX_INTENT_LENGTH]
 
 def generate_utterances(text, num_variations=5):
