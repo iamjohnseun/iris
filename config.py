@@ -2,7 +2,6 @@ import os
 
 class Config:
     DEBUG = os.getenv('DEBUG', False)
-    APP_URL = "https://iris.chromesq.com"
     MAX_QUESTION_LENGTH = 100 # Maximum length of a question
     MAX_INTENT_LENGTH = 30 # Maximum length for intent name
     MAX_UTTERANCE_LENGTH = 55 # Maximum length for utterances
@@ -39,3 +38,6 @@ class Config:
     MEMORY_THRESHOLD = 0.8  # 80% memory usage threshold
     MAX_MEMORY_USAGE = 0.85  # 85% memory threshold for scraping
     MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8 MB
+    
+    REQUEST_TIMEOUT = 300
+    GENERATION_TIMEOUT = 299
