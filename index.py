@@ -123,6 +123,14 @@ def process_website():
 def get_status(task_id):
     task = AsyncResult(task_id)
     
+    if task.ready():
+        result = task.get()
+        return jsonify({
+            'state': 'SUCCESS',
+            'status': 'Complete',
+            'result': result
+        })
+    
     if task.state == 'PENDING':
         response = {
             'state': task.state,
