@@ -112,7 +112,6 @@ def process_website():
         else:  # Single URL case
             single_page = is_absolute_path(url_list[0])
             urls = get_urls_to_process(url_list[0], single_page)
-            return urls
             total_urls = len(urls)
             
             if single_page or total_urls <= Config.SYNCHRONOUS_THRESHOLD or is_small_website(url_list[0]):
