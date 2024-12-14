@@ -149,42 +149,52 @@ def process_website():
         
 @app.route('/status/<task_id>', methods=['GET'])
 def get_status(task_id):
-    task = AsyncResult(task_id)
-    
-    if task.ready():
-        result = task.get()
+    try:
+        task = AsyncResult(task_id)
+        if not task.exists():
+            return jsonify({
+                'state': 'ERROR',
+                'status': "This task could not be found, the task ID may be incorrect."
+            }), 404
+        
+        if task.ready():
+            result = task.get()
+            return jsonify({
+                'state': 'SUCCESS',
+                'status': 'Complete',
+                'result': result
+            })
+        
+        if task.state == 'PENDING':
+            response = {
+                'state': task.state,
+                'status': 'Processing'
+            }
+        elif task.state == 'PROGRESS':
+            response = {
+                'state': task.state,
+                'status': task.info.get('status', ''),
+                'current': task.info.get('current', 0),
+                'total': task.info.get('total', 1),
+                'url': task.info.get('url')
+            }
+        elif task.state == 'SUCCESS':
+            response = {
+                'state': task.state,
+                'data': task.get()
+            }
+        else:
+            response = {
+                'state': task.state,
+                'status': str(task.info)
+            }
+        
+        return jsonify(response)
+    except Exception as e:
         return jsonify({
-            'state': 'SUCCESS',
-            'status': 'Complete',
-            'result': result
-        })
-    
-    if task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'status': 'Processing'
-        }
-    elif task.state == 'PROGRESS':
-        response = {
-            'state': task.state,
-            'status': task.info.get('status', ''),
-            'current': task.info.get('current', 0),
-            'total': task.info.get('total', 1),
-            'url': task.info.get('url')
-        }
-    elif task.state == 'SUCCESS':
-        response = {
-            'state': task.state,
-            'data': task.get()
-        }
-    else:
-        response = {
-            'state': task.state,
-            'status': str(task.info)
-        }
-    
-    return jsonify(response)
-
+            'state': 'ERROR',
+            'status': str(e)
+        }), 500
 @app.route('/download/<filename>')
 def download_file(filename):
     if not os.path.exists(os.path.join('download', filename)):
