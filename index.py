@@ -151,6 +151,13 @@ def process_website():
 def get_status(task_id):
     try:
         task = AsyncResult(task_id)
+        
+        if task.backend.get(task.backend.get_key_for_task(task_id)) is None:
+            return jsonify({
+                'state': 'NOT_FOUND',
+                'status': 'This task ID does not exist or has expired'
+            }), 404
+            
         if not task.exists() and task.state == 'PENDING':
             return jsonify({
                 'state': 'ERROR',
@@ -193,7 +200,7 @@ def get_status(task_id):
     except Exception as e:
         return jsonify({
             'state': 'ERROR',
-            'status': str(e)
+            'status': f'Error checking task status: {str(e)}'
         }), 500
 @app.route('/download/<filename>')
 def download_file(filename):
