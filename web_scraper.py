@@ -126,6 +126,7 @@ def fetch_website_content(url, single_page=False):
     visited_urls = set()
     urls_to_visit = {normalize_url(url)}
     base_domain = urlparse(url).netloc
+    content_size = 0
     
     # Initialize robots.txt parser
     rp = RobotFileParser()
@@ -152,20 +153,33 @@ def fetch_website_content(url, single_page=False):
             response = session.get(
                 current_url, 
                 timeout=Config.REQUEST_TIMEOUT,
-                allow_redirects=True
+                allow_redirects=True,
+                stream=True  # Enable streaming
             )
             response.raise_for_status()
             
             if 'text/html' not in response.headers.get('Content-Type', ''):
                 continue
 
-            soup = BeautifulSoup(response.text, 'html.parser')
-            content = parse_website_content(soup)
-            result["content"] += content + " "
-            visited_urls.add(current_url)
-            result["stats"]["pages_scraped"] += 1
+            # Process content in chunks
+            content_chunk = ""
+            for chunk in response.iter_content(chunk_size=Config.CONTENT_CHUNK_SIZE):
+                if chunk:
+                    content_chunk += chunk.decode('utf-8', errors='ignore')
+                    content_size += len(chunk)
+                    
+                    if content_size >= Config.MAX_CONTENT_PER_PAGE:
+                        break
             
-            # If single_page is True, don't collect more URLs
+            soup = BeautifulSoup(content_chunk, 'html.parser')
+            processed_content = parse_website_content(soup)
+            
+            if processed_content:
+                result["content"] += processed_content + " "
+                visited_urls.add(current_url)
+                result["stats"]["pages_scraped"] += 1
+            
+            # Progressive URL collection
             if not single_page:
                 for link in soup.find_all('a'):
                     href = link.get('href')
@@ -187,9 +201,9 @@ def fetch_website_content(url, single_page=False):
         except Exception as e:
             result["errors"].append(f"Error scraping {current_url}: {str(e)}")
             continue
-            
-        # time.sleep(random.uniform(0.1, 0.3))
         
+        # time.sleep(Config.SCRAPING_DELAY)
+            
         if single_page:
             break
     
