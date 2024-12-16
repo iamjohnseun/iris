@@ -54,12 +54,6 @@ def extract_sentences(text, batch_size=1000):
     return sentences
 
 # USAGE
-text = """
-Step 1: Create a free account. Create an Atchr account with your personal or business details to get started.
-Step 2: Upon registration, you'll receive your unique embed code to add to your website.
-Step 3: Your widget will be ready for seamless, direct communication with your customers.
-"""
-sentences = extract_sentences(text)
+# text = "A sample token to test the functionality of this script. Let's get started."
+# sentences = extract_sentences(text)
 # print(sentences)
-for i, sentence in enumerate(sentences, 1):
-    print(f"{i}. {sentence}")
