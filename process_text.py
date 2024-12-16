@@ -22,7 +22,7 @@ def get_paraphrase_model():
     if _paraphrase_model is None:
         _paraphrase_model = pipeline(
             'text2text-generation',
-            model='google/t5-small',
+            model='t5-small',
             device='cpu'
         )
     return _paraphrase_model
