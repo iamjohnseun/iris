@@ -25,7 +25,7 @@ def process_website_task(self, url, single_page=False):
     try:
         # Step 1: Create directory structure
         self.update_state(
-            state='PROGRESS',
+            state='STARTED',
             meta={
                 'status': steps[0],
                 'current': 1,
@@ -45,7 +45,7 @@ def process_website_task(self, url, single_page=False):
         
         # Step 2: Initialize model
         self.update_state(
-            state='PROGRESS',
+            state='STARTED',
             meta={
                 'status': steps[1],
                 'current': 2,
@@ -57,7 +57,7 @@ def process_website_task(self, url, single_page=False):
         
         # Step 3-5: Process using main function
         self.update_state(
-            state='PROGRESS',
+            state='STARTED',
             meta={
                 'status': "Processing website content",
                 'current': 3,
@@ -70,7 +70,7 @@ def process_website_task(self, url, single_page=False):
         
         # Step 6: Save results with new filename
         self.update_state(
-            state='PROGRESS',
+            state='STARTED',
             meta={
                 'status': steps[5],
                 'current': 6,
