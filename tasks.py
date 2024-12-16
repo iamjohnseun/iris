@@ -33,12 +33,12 @@ def process_website_task(self, url, single_page=False):
             }
         )
         
+        # Create output directory
+        output_dir = Config.OUTPUT_DIRECTORY
+        os.makedirs(output_dir, exist_ok=True)
+        
         # Create filename with domain and task ID
         filename = get_output_filename(url, self.request.id)
-        
-        # Create output directory
-        output_dir = os.path.join('download', filename)
-        os.makedirs(output_dir, exist_ok=True)
         
         # Step 2: Initialize model
         self.update_state(
