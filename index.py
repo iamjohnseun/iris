@@ -179,8 +179,8 @@ def check_task_status(task_id):
         elif task_result.state == STARTED and task_result.info:
             response.update({
                 'status': task_result.info.get('status', ''),
-                'progress': f"{task_result.info.get('current', 0)} / {task_result.info.get('total', 1)}",
                 'url': task_result.info.get('url'),
+                'progress': f"{task_result.info.get('current', 0)} / {task_result.info.get('total', 1)}",
                 'progress_percentage': int((task_result.info.get('current', 0) / task_result.info.get('total', 1)) * 100)
             })
         elif task_result.state == RETRY:
