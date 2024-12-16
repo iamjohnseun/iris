@@ -152,9 +152,8 @@ def fetch_website_content(url, single_page=False):
         try:
             response = session.get(
                 current_url, 
-                timeout=Config.REQUEST_TIMEOUT,
-                allow_redirects=True,
-                stream=True  # Enable streaming
+                timeout=Config.SYNC_REQUEST_TIMEOUT if single_page else Config.ASYNC_REQUEST_TIMEOUT,                allow_redirects=True,
+                stream=True
             )
             response.raise_for_status()
             

@@ -81,9 +81,11 @@ def generate_utterances(text, num_variations=5):
     
     return list(utterances)[:num_variations]
 
-def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_SIZE):
+def generate_questions_and_intents(sentences, url, is_sync=False, batch_size=Config.MAX_BATCH_SIZE):
+    timeout = Config.SYNC_REQUEST_TIMEOUT if is_sync else Config.ASYNC_REQUEST_TIMEOUT
+    
     signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(Config.GENERATION_TIMEOUT)
+    signal.alarm(timeout)
     
     try:
         sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
