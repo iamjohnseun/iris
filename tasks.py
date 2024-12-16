@@ -1,6 +1,7 @@
 import os
 import json
 from celery_config import celery_app
+from config import Config
 from main import main
 from generate_qa_intents import get_model
 from urllib.parse import urlparse
@@ -41,7 +42,7 @@ def process_website_task(self, url, single_page=False):
         os.makedirs(output_dir, exist_ok=True)
         
         # Create filename with domain and task ID
-        filename = f"{get_output_filename(url, self.request.id)}.json"
+        filename = get_output_filename(url, self.request.id)
         
         # Step 2: Initialize model
         self.update_state(
@@ -86,7 +87,7 @@ def process_website_task(self, url, single_page=False):
         return {
             'status': 'completed',
             'result': result,
-            'file_path': output_file,
+            'result_url': f"{Config.APP_URL}/{output_file}",
             'url': url,
             'stats': result.get('stats', {})
         }
