@@ -4,7 +4,7 @@ import redis
 from flask import Flask, jsonify, request, send_from_directory
 from validators import url as validate_url
 from celery.result import AsyncResult
-from celery.states import PENDING, SUCCESS, FAILURE, STARTED, RETRY, PROGRESS
+from celery.states import PENDING, SUCCESS, FAILURE, STARTED, RETRY
 from urllib.parse import urlparse
 
 from config import Config
@@ -154,8 +154,8 @@ def check_task_status(task_id):
     redis_client = redis.Redis(host='localhost', port=6379, db=0)
     try:
         task_result = AsyncResult(task_id)
- 
         task_key = f"celery-task-meta-{task_id}"
+        
         if not redis_client.exists(task_key):
             return {
                 "state": "NOT_FOUND",
@@ -171,13 +171,23 @@ def check_task_status(task_id):
             "status_url": f"{Config.APP_URL}/status/{task_id}"
         }
         
-        if task_result.state == 'PROGRESS':
+        if task_result.state == PENDING:
+            response.update({
+                'status': 'task pending',
+                'message': 'Task is in queue and waiting to be processed.'
+            })
+        elif task_result.state == STARTED and task_result.info:
             response.update({
                 'status': task_result.info.get('status', ''),
                 'current': task_result.info.get('current', 0),
                 'total': task_result.info.get('total', 1),
                 'url': task_result.info.get('url'),
                 'progress_percentage': int((task_result.info.get('current', 0) / task_result.info.get('total', 1)) * 100)
+            })
+        elif task_result.state == RETRY:
+            response.update({
+                'status': 'task retrying',
+                'message': 'Task encountered an issue, It will be retried.'
             })
         elif task_result.ready():
             if task_result.successful():
@@ -192,10 +202,6 @@ def check_task_status(task_id):
                     "status": "failed",
                     "error": str(task_result.result)
                 })
-        elif task_result.state == STARTED:
-            response.update({
-                "status": "processing"
-            })
         
         return response
     
