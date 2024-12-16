@@ -1,8 +1,10 @@
+import re
 import nltk
 import os
 from config import Config
 from nltk.tokenize import sent_tokenize
 from nltk.corpus import stopwords
+from transformers import pipeline
 
 nltk.data.path.extend([
     '/home/dev/nltk_data',
@@ -12,6 +14,30 @@ nltk.data.path.extend([
 
 nltk.download('punkt_tab', quiet=True)
 nltk.download('stopwords', quiet=True)
+
+_paraphrase_model = None
+
+def get_paraphrase_model():
+    global _paraphrase_model
+    if _paraphrase_model is None:
+        _paraphrase_model = pipeline(
+            'text2text-generation',
+            model='google/t5-small',
+            device='cpu'
+        )
+    return _paraphrase_model
+
+def paraphrase_sentence(sentence):
+    model = get_paraphrase_model()
+    prefix = "paraphrase: "
+    try:
+        result = model(prefix + sentence, 
+                      max_length=100,
+                      num_beams=2,
+                      temperature=0.7)
+        return result[0]['generated_text']
+    except:
+        return sentence
 
 def is_meaningful_sentence(sentence):
     words = sentence.split()
@@ -25,6 +51,16 @@ def is_meaningful_sentence(sentence):
         
     return True
 
+def clean_text(text):
+    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'[^\w\s.,!?$€£¥%@#&*()\-]', '', text)
+    text = re.sub(r'\s+([.,!?])', r'\1', text)
+    text = re.sub(r'[\n\r\t]', ' ', text)
+    text = re.sub(r'([.,!?])\s+', r'\1 ', text)
+    text = text.replace('..', '.').replace(',,', ',')
+    text = text[0].upper() + text[1:] if text else text
+    return text.strip()
+
 def extract_sentences(text, batch_size=1000):
     sentences = []
     paragraphs = text.split('\n')
@@ -33,11 +69,17 @@ def extract_sentences(text, batch_size=1000):
         batch_text = ' '.join(batch)
         extracted = sent_tokenize(batch_text)
         
-        meaningful_sentences = [
-            sent.strip() 
-            for sent in extracted 
-            if is_meaningful_sentence(sent)
-        ]
+        # meaningful_sentences = [
+        #     sent.strip() 
+        #     for sent in extracted 
+        #     if is_meaningful_sentence(sent)
+        # ]
+        meaningful_sentences = []
+        for sent in extracted:
+            if is_meaningful_sentence(sent):
+                cleaned = clean_sentence(sent)
+                paraphrased = paraphrase_sentence(cleaned)
+                meaningful_sentences.append(paraphrased)
         
         sentences.extend(meaningful_sentences)
     
