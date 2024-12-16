@@ -77,7 +77,7 @@ def extract_sentences(text, batch_size=1000):
         meaningful_sentences = []
         for sent in extracted:
             if is_meaningful_sentence(sent):
-                cleaned = clean_sentence(sent)
+                cleaned = clean_text(sent)
                 paraphrased = paraphrase_sentence(cleaned)
                 meaningful_sentences.append(paraphrased)
         
