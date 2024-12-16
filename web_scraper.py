@@ -1,7 +1,6 @@
 import gc
 import requests
 import time
-import random
 import psutil
 from urllib.parse import urljoin, urlparse, urlunparse
 from bs4 import BeautifulSoup
@@ -47,6 +46,35 @@ def create_session():
     })
     return session
 
+def get_urls_to_process(base_url, single_page=False):
+    session = create_session()
+    urls = {normalize_url(base_url)}
+    
+    if single_page:
+        return list(urls)
+        
+    try:
+        response = session.get(base_url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        base_domain = urlparse(base_url).netloc
+        
+        for link in soup.find_all('a'):
+            href = link.get('href')
+            if href:
+                full_url = urljoin(base_url, href)
+                normalized_url = normalize_url(full_url)
+                if urlparse(normalized_url).netloc == base_domain:
+                    urls.add(normalized_url)
+                    
+                if check_memory_usage() > 0.9:
+                    gc.collect()
+                    break
+                    
+    except Exception as e:
+        print(f"Error collecting URLs from {base_url}: {str(e)}")
+        
+    return list(urls)
+
 def parse_website_content(soup):
     # Remove unwanted elements
     for element in soup.find_all(Config.EXCLUDED_ELEMENTS):
@@ -71,6 +99,16 @@ def parse_website_content(soup):
 
     return ' '.join(content)
 
+
+def process_batch(urls):
+    session = create_session()
+    results = []
+    
+    for url in urls:
+        result = fetch_website_content(url, single_page=True)
+        results.append(result)
+    return results
+
 def fetch_website_content(url, single_page=False):
     result = {
         "content": "",
@@ -89,6 +127,7 @@ def fetch_website_content(url, single_page=False):
     visited_urls = set()
     urls_to_visit = {normalize_url(url)}
     base_domain = urlparse(url).netloc
+    content_size = 0
     
     # Initialize robots.txt parser
     rp = RobotFileParser()
@@ -114,21 +153,33 @@ def fetch_website_content(url, single_page=False):
         try:
             response = session.get(
                 current_url, 
-                timeout=Config.REQUEST_TIMEOUT,
-                allow_redirects=True
+                timeout=Config.SYNC_REQUEST_TIMEOUT if single_page else Config.ASYNC_REQUEST_TIMEOUT,                allow_redirects=True,
+                stream=True
             )
             response.raise_for_status()
             
             if 'text/html' not in response.headers.get('Content-Type', ''):
                 continue
 
-            soup = BeautifulSoup(response.text, 'html.parser')
-            content = parse_website_content(soup)
-            result["content"] += content + " "
-            visited_urls.add(current_url)
-            result["stats"]["pages_scraped"] += 1
+            # Process content in chunks
+            content_chunk = ""
+            for chunk in response.iter_content(chunk_size=Config.CONTENT_CHUNK_SIZE):
+                if chunk:
+                    content_chunk += chunk.decode('utf-8', errors='ignore')
+                    content_size += len(chunk)
+                    
+                    if content_size >= Config.MAX_CONTENT_PER_PAGE:
+                        break
             
-            # If single_page is True, don't collect more URLs
+            soup = BeautifulSoup(content_chunk, 'html.parser')
+            processed_content = parse_website_content(soup)
+            
+            if processed_content:
+                result["content"] += processed_content + " "
+                visited_urls.add(current_url)
+                result["stats"]["pages_scraped"] += 1
+            
+            # Progressive URL collection
             if not single_page:
                 for link in soup.find_all('a'):
                     href = link.get('href')
@@ -151,16 +202,8 @@ def fetch_website_content(url, single_page=False):
             result["errors"].append(f"Error scraping {current_url}: {str(e)}")
             continue
         
-        except Timeout:
-            return {
-                "status": "error",
-                "message": "Request timed out",
-                "error_type": "timeout"
-            }
+        # time.sleep(Config.SCRAPING_DELAY)
             
-        # time.sleep(random.uniform(0.1, 0.3))
-        
-        # Break after first page if single_page mode
         if single_page:
             break
     

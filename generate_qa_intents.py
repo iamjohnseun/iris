@@ -34,6 +34,16 @@ def clean_text(text):
     text = text.replace('..', '.').replace(',,', ',')
     return text.strip()
 
+def clean_intent_name(text):
+    text = re.sub(r'[\d_]+', '', text)
+    text = re.sub(r'\s+', ' ', text)
+    text = text.lower().strip().replace(' ', '.')
+    text = re.sub(r'\.+$', '', text)
+    words = text.split('.')
+    if len(words) > 3:
+        words = words[:3]
+    return '.'.join(words)
+
 def generate_intent_name(text, url):
     path = urlparse(url).path.strip('/')
     page_context = path.split('/')[-1] if path else 'general'
@@ -44,13 +54,14 @@ def generate_intent_name(text, url):
     topic = keywords[0] if keywords else 'general'
     
     intent_name = f"{page_context}.{topic}".lower().replace(' ', '_')
+    intent_name = clean_intent_name(intent_name)
     return intent_name[:Config.MAX_INTENT_LENGTH]
 
 def generate_utterances(text, num_variations=5):
     model = get_model()
     text = clean_text(text)
     
-    temperatures = [0.7, 0.8, 0.9]
+    temperatures = [0.6, 0.8, 0.9]
     utterances = set()
     
     for temp in temperatures:
@@ -73,9 +84,12 @@ def generate_utterances(text, num_variations=5):
     
     return list(utterances)[:num_variations]
 
-def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_SIZE):
+def generate_questions_and_intents(sentences, url, is_sync=False, batch_size=Config.MAX_BATCH_SIZE):
+    timeout = Config.SYNC_REQUEST_TIMEOUT if is_sync else Config.ASYNC_REQUEST_TIMEOUT
+    
     signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(Config.GENERATION_TIMEOUT)
+    signal.alarm(timeout)
+    
     try:
         sentences = [s for s in sentences if len(s.split()) >= Config.MIN_WORDS_PER_ELEMENT]
         sentences = sentences[:Config.MAX_SENTENCES]
@@ -111,7 +125,7 @@ def generate_questions_and_intents(sentences, url, batch_size=Config.MAX_BATCH_S
             "error_type": "timeout"
         }
     finally:
-        signal.alarm(0)
+        signal.alarm(0) 
         
 # USAGE
 # sentences = ["Your extracted sentences here..."]
