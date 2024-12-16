@@ -4,7 +4,6 @@ import time
 from celery_config import celery_app
 from config import Config
 from main import main
-from generate_qa_intents import get_model
 from urllib.parse import urlparse
 
 def get_output_filename(url, job_id):
@@ -29,8 +28,7 @@ def process_website_task(self, url, single_page=False):
             state='STARTED',
             meta={
                 'status': steps[0],
-                'current': 1,
-                'total': total_steps,
+                'progress': f"1/{total_steps}",
                 'url': url
             }
         )
@@ -47,12 +45,10 @@ def process_website_task(self, url, single_page=False):
             state='STARTED',
             meta={
                 'status': steps[1],
-                'current': 2,
-                'total': total_steps,
+                'progress': f"2/{total_steps}",
                 'url': url
             }
         )
-        model = get_model()
         
         generation_start_time = time.time()
         
@@ -61,8 +57,7 @@ def process_website_task(self, url, single_page=False):
             state='STARTED',
             meta={
                 'status': "Processing website content",
-                'current': 3,
-                'total': total_steps,
+                'progress': f"3/{total_steps}",
                 'url': url
             }
         )
@@ -76,8 +71,7 @@ def process_website_task(self, url, single_page=False):
             state='STARTED',
             meta={
                 'status': steps[5],
-                'current': 6,
-                'total': total_steps,
+                'progress': f"6/{total_steps}",
                 'url': url
             }
         )
