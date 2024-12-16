@@ -10,7 +10,7 @@ def get_paraphrase_model():
     if _paraphrase_model is None:
         _paraphrase_model = pipeline(
             'text2text-generation',
-            model='tuner007/pegasus_paraphrase',
+            model='google/flan-t5-large',
             device='cpu',
             batch_size=1
         )
