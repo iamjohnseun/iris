@@ -4,7 +4,6 @@ from config import Config
 from nltk.tokenize import sent_tokenize
 from nltk.corpus import stopwords
 
-# Set multiple data paths
 nltk.data.path.extend([
     '/home/dev/nltk_data',
     '/var/www/venv/nltk_data',
@@ -34,7 +33,6 @@ def extract_sentences(text, batch_size=1000):
         batch_text = ' '.join(batch)
         extracted = sent_tokenize(batch_text)
         
-        # Filter for meaningful sentences
         meaningful_sentences = [
             sent.strip() 
             for sent in extracted 
@@ -46,6 +44,12 @@ def extract_sentences(text, batch_size=1000):
     return sentences
 
 # USAGE
-text = "Step 1 Create a free account Create an Atchr account with your personal or business details to get started."
+text = """
+Step 1: Create a free account. Create an Atchr account with your personal or business details to get started.
+Step 2: Upon registration, you'll receive your unique embed code to add to your website.
+Step 3: Your widget will be ready for seamless, direct communication with your customers.
+"""
 sentences = extract_sentences(text)
-print(sentences)
+# print(sentences)
+for i, sentence in enumerate(sentences, 1):
+    print(f"{i}. {sentence}")
