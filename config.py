@@ -42,7 +42,8 @@ class Config:
     MAX_MEMORY_USAGE = 0.85  # 85% memory threshold for scraping
     MAX_CONTENT_LENGTH = 8 * 1024 * 1024  # 8 MB
     
-    REQUEST_TIMEOUT = 300
+    SYNC_REQUEST_TIMEOUT = 300
+    ASYNC_REQUEST_TIMEOUT = 3600
     GENERATION_TIMEOUT = 299
 
     # Progressive Processing
