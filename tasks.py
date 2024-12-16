@@ -81,11 +81,11 @@ def process_website_task(self, url, single_page=False):
             json.dump(result, f, indent=4)
             
         return {
-            'status': 'completed',
-            'result': result,
-            'result_url': f"{Config.APP_URL}/{output_file}",
             'url': url,
-            'stats': result.get('stats', {})
+            'data': result.get('data', {}),
+            'errors': result.get('errors', []),
+            'stats': result.get('stats', {}),
+            'result_url': f"{Config.APP_URL}/{output_file}"
         }
         
     except Exception as e:
