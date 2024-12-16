@@ -1,8 +1,10 @@
 import os
 import requests
+import redis
 from flask import Flask, jsonify, request, send_from_directory
 from validators import url as validate_url
 from celery.result import AsyncResult
+from celery.states import PENDING, SUCCESS, FAILURE, STARTED, RETRY, PROGRESS
 from urllib.parse import urlparse
 
 from config import Config
@@ -148,60 +150,63 @@ def process_website():
         }), 500
         
 @app.route('/status/<task_id>', methods=['GET'])
-def get_status(task_id):
+def check_task_status(task_id):
+    redis_client = redis.Redis(host='localhost', port=6379, db=0)
     try:
-        task = AsyncResult(task_id)
-        
-        if task.backend.get(task.backend.get_key_for_task(task_id)) is None:
-            return jsonify({
-                'state': 'NOT_FOUND',
-                'status': 'This task ID does not exist or has expired'
-            }), 404
+        task_result = AsyncResult(task_id)
+ 
+        task_key = f"celery-task-meta-{task_id}"
+        if not redis_client.exists(task_key):
+            return {
+                "state": "NOT_FOUND",
+                "status": "task_not_found",
+                "task_id": task_id,
+                "message": "This task was not found. It may have expired or the provided task ID may be incorrect."
+            }
             
-        if not task.exists() and task.state == 'PENDING':
-            return jsonify({
-                'state': 'ERROR',
-                'status': "This task not exist or has expired, the task ID may be incorrect."
-            }), 404
+        response = {
+            "state": task_result.state,
+            "status": task_result.state.lower(),
+            "task_id": task_id,
+            "status_url": f"{Config.APP_URL}/status/{task_id}"
+        }
         
-        if task.ready():
-            result = task.get()
-            return jsonify({
-                'state': 'SUCCESS',
-                'status': 'Complete',
-                'result': result
+        if task_result.state == 'PROGRESS':
+            response.update({
+                'status': task_result.info.get('status', ''),
+                'current': task_result.info.get('current', 0),
+                'total': task_result.info.get('total', 1),
+                'url': task_result.info.get('url'),
+                'progress_percentage': int((task_result.info.get('current', 0) / task_result.info.get('total', 1)) * 100)
+            })
+        elif task_result.ready():
+            if task_result.successful():
+                response.update({
+                    "state": SUCCESS,
+                    "status": "completed",
+                    "result": task_result.get()
+                })
+            else:
+                response.update({
+                    "state": FAILURE,
+                    "status": "failed",
+                    "error": str(task_result.result)
+                })
+        elif task_result.state == STARTED:
+            response.update({
+                "status": "processing"
             })
         
-        if task.state == 'PENDING':
-            response = {
-                'state': task.state,
-                'status': 'Processing'
-            }
-        elif task.state == 'PROGRESS':
-            response = {
-                'state': task.state,
-                'status': task.info.get('status', ''),
-                'current': task.info.get('current', 0),
-                'total': task.info.get('total', 1),
-                'url': task.info.get('url')
-            }
-        elif task.state == 'SUCCESS':
-            response = {
-                'state': task.state,
-                'data': task.get()
-            }
-        else:
-            response = {
-                'state': task.state,
-                'status': str(task.info)
-            }
-        
-        return jsonify(response)
+        return response
+    
     except Exception as e:
-        return jsonify({
-            'state': 'ERROR',
-            'status': f'Error checking task status: {str(e)}'
-        }), 500
+        return {
+            "state": "ERROR",
+            "status": "error",
+            "message": str(e)
+        }
+
+
 @app.route('/download/<filename>')
 def download_file(filename):
     if not os.path.exists(os.path.join('download', filename)):
