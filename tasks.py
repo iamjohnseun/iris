@@ -1,11 +1,11 @@
-import os
 import json
+import os
+import time
 from celery_config import celery_app
 from config import Config
 from main import main
 from generate_qa_intents import get_model
 from urllib.parse import urlparse
-from datetime import datetime
 
 def get_output_filename(url, job_id):
     domain = urlparse(url).netloc.replace('www.', '') or 'local'
@@ -35,14 +35,12 @@ def process_website_task(self, url, single_page=False):
             }
         )
         
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        # Create output directory
-        output_dir = os.path.join('download', timestamp)
-        os.makedirs(output_dir, exist_ok=True)
-        
         # Create filename with domain and task ID
         filename = get_output_filename(url, self.request.id)
+        
+        # Create output directory
+        output_dir = os.path.join('download', filename)
+        os.makedirs(output_dir, exist_ok=True)
         
         # Step 2: Initialize model
         self.update_state(
@@ -56,6 +54,8 @@ def process_website_task(self, url, single_page=False):
         )
         model = get_model()
         
+        generation_start_time = time.time()
+        
         # Step 3-5: Process using main function
         self.update_state(
             state='STARTED',
@@ -68,6 +68,8 @@ def process_website_task(self, url, single_page=False):
         )
         
         result = main(url, single_page)
+        # Add generation time to stats
+        result['stats']['generation_time'] = time.time() - generation_start_time
         
         # Step 6: Save results with new filename
         self.update_state(
