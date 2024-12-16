@@ -13,12 +13,12 @@ def get_output_filename(url, job_id):
 @celery_app.task(bind=True)
 def process_website_task(self, url, single_page=False):
     steps = [
-        "Setting up task",
-        "Initializing models",
-        "Fetching website content",
-        "Processing content",
-        "Generating Q&A pairs",
-        "Saving results"
+        "setting up task",
+        "initializing models",
+        "fetching content",
+        "processing content",
+        "generating responses",
+        "saving results"
     ]
     total_steps = len(steps)
     
@@ -56,7 +56,7 @@ def process_website_task(self, url, single_page=False):
         self.update_state(
             state='STARTED',
             meta={
-                'status': "Processing website content",
+                'status': steps[3],
                 'progress': f"3/{total_steps}",
                 'url': url
             }
