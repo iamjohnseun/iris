@@ -50,3 +50,5 @@ class Config:
     CONTENT_CHUNK_SIZE = 50000  # Process content in 50KB chunks
     MAX_CONTENT_PER_PAGE = 100000  # 100KB per page limit
     PROCESSING_BATCH_SIZE = 5  # Process 5 sentences at a time
+    
+    OUTPUT_DIRECTORY = 'download'
