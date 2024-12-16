@@ -179,8 +179,7 @@ def check_task_status(task_id):
         elif task_result.state == STARTED and task_result.info:
             response.update({
                 'status': task_result.info.get('status', ''),
-                'current': task_result.info.get('current', 0),
-                'total': task_result.info.get('total', 1),
+                'progress': f"{task_result.info.get('current', 0)} / {task_result.info.get('total', 1)}",
                 'url': task_result.info.get('url'),
                 'progress_percentage': int((task_result.info.get('current', 0) / task_result.info.get('total', 1)) * 100)
             })
