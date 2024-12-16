@@ -1,6 +1,5 @@
-import re
 import nltk
-import os
+import re
 from config import Config
 from nltk.tokenize import sent_tokenize
 from nltk.corpus import stopwords
@@ -33,8 +32,9 @@ def paraphrase_sentence(sentence):
     try:
         result = model(prefix + sentence, 
                       max_length=100,
-                      num_beams=2,
-                      temperature=0.7)
+                      do_sample=True,
+                      temperature=0.7,
+                      num_beams=2)
         return result[0]['generated_text']
     except:
         return sentence
